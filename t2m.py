@@ -81,7 +81,10 @@ def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_a
             time.sleep(30)
             db.setdefault(twitter_handle, {}).setdefault("done", []).append(i.id)
 
-    print "Forwarded %s tweets from %s to %s" % (len(to_toot), twitter_handle, mastodon_handle)
+    if not to_toot:
+        print "Nothing to do for %s" % twitter_handle
+    else:
+        print "Forwarded %s tweets from %s to %s" % (len(to_toot), twitter_handle, mastodon_handle)
 
     return db
 
