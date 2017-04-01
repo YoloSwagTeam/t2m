@@ -96,7 +96,7 @@ def one(twitter_handle, mastodon_handle=None, number=None, only_mark_as_seen=Fal
     db = get_db()
 
     if mastodon_handle is None and twitter_handle not in db:
-        print "Error: I don't have an associated mastodon account for '%s', please provide one to me with -m"
+        print "Error: I don't have an associated mastodon account for '%s', please provide one to me with -m" % twitter_handle
         sys.exit(1)
 
     if mastodon_handle is None and twitter_handle in db:
