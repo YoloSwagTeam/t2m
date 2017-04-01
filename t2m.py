@@ -61,9 +61,7 @@ def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_a
         for url in i.urls:
             text = text.replace(url.url, url.expanded_url)
 
-        if debug:
-            print ">>", text
-        elif only_mark_as_seen:
+        if only_mark_as_seen:
             db.setdefault(twitter_handle, {}).setdefault("done", []).append(i.id)
         else:
             to_toot.append(text)
@@ -73,13 +71,16 @@ def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_a
         to_toot = to_toot[:int(number)]
 
     # actually forward
-    if not debug and not only_mark_as_seen:
+    if not only_mark_as_seen:
         for text in to_toot:
-            response = mastodon.toot(text)
-            assert not response.get("error"), response
-            print "[forwarding] >>", text
-            time.sleep(30)
-            db.setdefault(twitter_handle, {}).setdefault("done", []).append(i.id)
+            if debug:
+                print ">>", text
+            else:
+                response = mastodon.toot(text)
+                assert not response.get("error"), response
+                print "[forwarding] >>", text
+                time.sleep(30)
+                db.setdefault(twitter_handle, {}).setdefault("done", []).append(i.id)
 
     if not to_toot:
         print "Nothing to do for %s" % twitter_handle
