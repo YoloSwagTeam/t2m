@@ -38,8 +38,9 @@ def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_a
 
     mastodon = Mastodon(client_id='./t2m_clientcred.txt', access_token=mastodon_creds)
 
-    count = 0
+    to_toot = []
 
+    # select tweets first
     for i in reversed(t.GetUserTimeline(screen_name=twitter_handle, count=200)):
 
         # do not forward retweets for now
@@ -65,18 +66,22 @@ def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_a
         elif only_mark_as_seen:
             db.setdefault(twitter_handle, {}).setdefault("done", []).append(i.id)
         else:
+            to_toot.append(text)
+
+    # slices selected tweets if specified
+    if number is not None:
+        to_toot = to_toot[:int(number)]
+
+    # actually forward
+    if not debug and not only_mark_as_seen:
+        for text in to_toot:
             response = mastodon.toot(text)
             assert not response.get("error"), response
             print "[forwarding] >>", text
-            # time.sleep(30)
+            time.sleep(30)
             db.setdefault(twitter_handle, {}).setdefault("done", []).append(i.id)
 
-        count += 1
-
-        if number is not None and count >= int(number):
-            break
-
-    print "Forwarded %s tweets from %s to %s" % (count, twitter_handle, mastodon_handle)
+    print "Forwarded %s tweets from %s to %s" % (len(to_toot), twitter_handle, mastodon_handle)
 
     return db
 
