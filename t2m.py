@@ -68,7 +68,7 @@ def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_a
 
     # slices selected tweets if specified
     if number is not None:
-        to_toot = to_toot[:int(number)]
+        to_toot = to_toot[-int(number):]
 
     # actually forward
     if not only_mark_as_seen:
