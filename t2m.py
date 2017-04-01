@@ -147,8 +147,14 @@ def add(twitter_handle, mastodon_handle):
     print "done"
 
 
+def list():
+    db = get_db()
+    for i in db:
+        print " *", i
+
+
 parser = argh.ArghParser()
-parser.add_commands([one, all, add])
+parser.add_commands([one, all, add, list])
 
 if __name__ == '__main__':
     parser.dispatch()
