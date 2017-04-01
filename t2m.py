@@ -52,7 +52,7 @@ def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_a
             continue
 
         # do not forward already forwarded tweets
-        if i.id in db.get(twitter_handle, []):
+        if i.id in db.get(twitter_handle, {}).setdefault("done", []):
             continue
 
         text = i.text
