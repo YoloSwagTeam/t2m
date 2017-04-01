@@ -23,7 +23,7 @@ def save_db(db):
     json.dump(db, open("db.json", "w"), indent=4)
 
 
-def forward(db, twitter_handle, mastodon_handle, debug):
+def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_as_seen=False):
     t = twitter.Api(**yaml.safe_load(open("conf.yaml")))
     mastodon_creds = "t2m_%s_creds.txt" % mastodon_handle
 
@@ -31,17 +31,19 @@ def forward(db, twitter_handle, mastodon_handle, debug):
         mastodon = Mastodon(client_id='./t2m_clientcred.txt')
         print "Not credentials for mastodon account '%s', creating them (the password will NOT be saved)" % mastodon_handle
         mastodon.log_in(
-            input("Email for mastodon account '%s': " % mastodon_handle).strip(),
+            argh.io.safe_input("Email for mastodon account '%s': " % mastodon_handle).strip(),
             getpass("Password for mastodon account of '%s': " % mastodon_handle),
             to_file=mastodon_creds
         )
 
-    mastodon = Mastodon(client_id=mastodon_creds)
+    mastodon = Mastodon(client_id='./t2m_clientcred.txt', access_token=mastodon_creds)
 
-    for i in t.GetUserTimeline(screen_name=twitter_handle, count=200):
+    count = 0
+
+    for i in reversed(t.GetUserTimeline(screen_name=twitter_handle, count=200)):
 
         # do not forward retweets for now
-        if i.retweeted:
+        if i.retweeted_status:
             continue
 
         # do not forward pseudo-private answer for now
@@ -56,21 +58,30 @@ def forward(db, twitter_handle, mastodon_handle, debug):
 
         # remove this t.co crap
         for url in i.urls:
-            text.replace(url.url, url.expanded_url)
-
-        i.text
+            text = text.replace(url.url, url.expanded_url)
 
         if debug:
-            print ">>", i.text
-        else:
-            mastodon.toot('Tooting from python!')
-            time.sleep(30)
+            print ">>", text
+        elif only_mark_as_seen:
             db.setdefault(twitter_handle, {}).setdefault("done", []).append(i.id)
+        else:
+            response = mastodon.toot(text)
+            assert not response.get("error"), response
+            print "[forwarding] >>", text
+            # time.sleep(30)
+            db.setdefault(twitter_handle, {}).setdefault("done", []).append(i.id)
+
+        count += 1
+
+        if number is not None and count >= int(number):
+            break
+
+    print "Forwarded %s tweets from %s to %s" % (count, twitter_handle, mastodon_handle)
 
     return db
 
 
-def one(twitter_handle, mastodon_handle=None, debug=False):
+def one(twitter_handle, mastodon_handle=None, number=None, only_mark_as_seen=False, debug=False):
     db = get_db()
 
     if mastodon_handle is None and twitter_handle not in db:
@@ -83,7 +94,7 @@ def one(twitter_handle, mastodon_handle=None, debug=False):
     # force set new mastodon handle
     db.setdefault(twitter_handle, {})["mastodon"] = mastodon_handle
 
-    db = forward(db, twitter_handle, mastodon_handle, debug)
+    db = forward(db, twitter_handle, mastodon_handle, debug=debug, number=number, only_mark_as_seen=only_mark_as_seen)
 
     save_db(db)
 
@@ -107,12 +118,12 @@ def add(twitter_handle, mastodon_handle):
 
     mastodon_creds = "t2m_%s_creds.txt" % mastodon_handle
 
-    mastodon = Mastodon(client_id='./t2m_clientcred.txt')
-
     if not os.path.exists(mastodon_creds):
+        mastodon = Mastodon(client_id='./t2m_clientcred.txt')
+
         print "Grabbing credentials for mastodon handle (password will NOT be stored"
         mastodon.log_in(
-            input("Email for mastodon account '%s': " % mastodon_handle).strip(),
+            argh.io.safe_input("Email for mastodon account '%s': " % mastodon_handle).strip(),
             getpass("Password for mastodon account of '%s': " % mastodon_handle),
             to_file=mastodon_creds
         )
