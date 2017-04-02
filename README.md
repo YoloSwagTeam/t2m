@@ -63,6 +63,8 @@ To forward tweets for all accounts, simply run:
 
     ./t2m all
 
+This is a good command to put inside a crontab.
+
 To check all accounts that will be forwarded, do a:
 
     ./t2m list
