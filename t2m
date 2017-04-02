@@ -162,4 +162,8 @@ if __name__ == '__main__':
     if not os.path.exists("./t2m_clientcred.txt"):
         Mastodon.create_app('t2m', to_file = 't2m_clientcred.txt')
 
+    if not os.path.exists("./conf.yaml"):
+        print "You need to have a conf.yaml file containing twitter connection informations, please read the documentation https://github.com/Psycojoker/t2m#installation"
+        sys.exit(1)
+
     parser.dispatch()
