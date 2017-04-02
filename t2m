@@ -159,4 +159,7 @@ parser = argh.ArghParser()
 parser.add_commands([one, all, add, list])
 
 if __name__ == '__main__':
+    if not os.path.exists("./t2m_clientcred.txt"):
+        Mastodon.create_app('t2m', to_file = 't2m_clientcred.txt')
+
     parser.dispatch()
