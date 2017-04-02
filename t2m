@@ -76,11 +76,11 @@ def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_a
     if not only_mark_as_seen:
         for text in to_toot:
             if debug:
-                print ">>", text
+                print ">>", text.encode("Utf-8")
             else:
                 response = mastodon.toot(text)
                 assert not response.get("error"), response
-                print "[forwarding] >>", text
+                print "[forwarding] >>", text.encode("Utf-8")
                 time.sleep(30)
                 db.setdefault(twitter_handle, {}).setdefault("done", []).append(i.id)
 
