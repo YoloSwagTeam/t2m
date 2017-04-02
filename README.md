@@ -71,6 +71,11 @@ You can also add an account directly without using the `one` command using:
 
     ./t2m add twitter_account mastodon_account
 
+
+# Limitations
+
+Doesn't handle images yet.
+
 # Licence
 
 Gplv3+
