@@ -63,10 +63,10 @@ def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_a
         for url in i.urls:
             text = text.replace(url.url, url.expanded_url)
 
-        if only_mark_as_seen:
-            db.setdefault(twitter_handle, {}).setdefault("done", []).append(i.id)
-        else:
+        if not only_mark_as_seen:
             to_toot.append(text)
+
+        db.setdefault(twitter_handle, {}).setdefault("done", []).append(i.id)
 
     # slices selected tweets if specified
     if number is not None:
