@@ -90,7 +90,7 @@ def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_a
                 "medias": [x.media_url for x in i.media] if i.media else []
             })
 
-        if not debug:
+        if only_mark_as_seen:
             db.setdefault(twitter_handle, {}).setdefault("done", []).append(i.id)
 
     # slices selected tweets if specified
