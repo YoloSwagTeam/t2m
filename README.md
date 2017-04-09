@@ -28,6 +28,16 @@ Then you need twitter API credentials. Following this tutorial https://python-tw
 
 The credentials for Mastodon are automatically generated at the first startup.
 
+# Python 2/3 and one known bug
+
+Compatible with both.
+
+There is a known bug if you run python2 coming for the STL lib `mimetypes`:
+JPEG images will be uploaded with the `.jpe` extension, this will break "going
+on the exact url of the image" (will cause a download instead of a display).
+
+This bug is fixed in python 3 so I would recommend running t2m with it.
+
 # Usage
 
 ## One account
