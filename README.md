@@ -11,6 +11,12 @@ On debian/ubuntu:
     virtualenv ve
     source ve/bin/activate
 
+    # if you run with an old version of python 2.7 (Ubuntu 14.04 for example)
+    # you'll need to run those, otherwise requests will break because it won't
+    # be able to correctly verify the host of the https issuer
+    # if you use python 3 you can ignore that
+    pip install pyopenssl ndg-httpsclient pyasn1
+
     pip install -r requirements.txt
 
 Then you need twitter API credentials. Following this tutorial https://python-twitter.readthedocs.io/en/latest/getting_started.html then create a `conf.yaml` file of this format:
