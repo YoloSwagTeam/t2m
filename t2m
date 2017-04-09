@@ -5,6 +5,9 @@ import sys
 import json
 import time
 import shutil
+import tempfile
+
+from urllib import urlretrieve
 
 from getpass import getpass
 
@@ -82,7 +85,10 @@ def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_a
             text = text.replace(url.url, url.expanded_url)
 
         if not only_mark_as_seen:
-            to_toot.append(text)
+            to_toot.append({
+                "text": text,
+                "medias": [x.media_url for x in i.media] if i.media else []
+            })
 
         if not debug:
             db.setdefault(twitter_handle, {}).setdefault("done", []).append(i.id)
@@ -91,15 +97,23 @@ def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_a
     if number is not None:
         to_toot = to_toot[-int(number):]
 
+    tmp_dir = tempfile.mkdtemp()
+
     # actually forward
     if not only_mark_as_seen:
-        for text in to_toot:
+        for toot in to_toot:
             if debug:
-                print ">>", text.encode("Utf-8")
+                print ">>", toot["text"].encode("Utf-8"), " ".join(toot["medias"])
             else:
-                response = mastodon.toot(text)
+                medias = []
+                for number, media_url in enumerate(toot["medias"]):
+                    dl_file_path = os.path.join(tmp_dir, str(number) + "." + media_url.split(".")[-1])
+                    urlretrieve(media_url, dl_file_path)
+                    medias.append((mastodon.media_post(dl_file_path))["id"])
+
+                response = mastodon.status_post(toot["text"], media_ids=medias)
                 assert not response.get("error"), response
-                print "[forwarding] >>", text.encode("Utf-8")
+                print "[forwarding] >>", toot["text"].encode("Utf-8"), " ".join(toot["medias"])
                 time.sleep(30)
                 db.setdefault(twitter_handle, {}).setdefault("done", []).append(i.id)
 
@@ -109,6 +123,8 @@ def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_a
         print "Nothing to do for %s" % twitter_handle
     else:
         print "Forwarded %s tweets from %s to %s" % (len(to_toot), twitter_handle, mastodon_handle)
+
+    shutil.rmtree(tmp_dir, ignore_errors=True)
 
     return db
 
