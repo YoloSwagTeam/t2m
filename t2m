@@ -92,6 +92,7 @@ def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_a
         if not only_mark_as_seen:
             to_toot.append({
                 "text": text,
+                "id": i.id,
                 "medias": [x.media_url for x in i.media] if i.media else []
             })
 
@@ -120,7 +121,8 @@ def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_a
                 assert not response.get("error"), response
                 print("[forwarding] >>", toot["text"].encode("Utf-8"), " ".join(toot["medias"]))
                 time.sleep(30)
-                db.setdefault(twitter_handle, {}).setdefault("done", []).append(i.id)
+
+                db.setdefault(twitter_handle, {}).setdefault("done", []).append(toot["id"])
 
     if only_mark_as_seen:
         print("Mark all available tweets as seen")
