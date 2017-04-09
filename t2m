@@ -26,24 +26,37 @@ def save_db(db):
     json.dump(db, open("db.json", "w"), indent=4)
 
 
+def ensure_client_existe_for_instance(instance):
+    if not os.path.exists("./t2m_%s_clientcred.txt" % instance):
+        Mastodon.create_app('t2m',
+            to_file='t2m_%s_clientcred.txt' % instance,
+            api_base_url='https://%s' % instance,
+        )
+
+
 def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_as_seen=False):
     t = twitter.Api(**yaml.safe_load(open("conf.yaml")))
-    mastodon_creds = "t2m_%s_creds.txt" % mastodon_handle
 
     if not "@" in mastodon_handle:
         print "ERROR: we now handle multi-instances, you need to update the mastodon handle '%s' by doing './t2m add %s %s@theinstance.com'" % (mastodon_handle, twitter_handle, mastodon_handle)
         sys.exit(1)
 
+    mastodon_nick, instance = mastodon_handle.split("@", 1)
+
+    ensure_client_existe_for_instance(instance)
+
+    mastodon_creds = "t2m_%s_creds.txt" % mastodon_handle
     if not os.path.exists(mastodon_creds):
-        mastodon = Mastodon(client_id='./t2m_clientcred.txt')
+        mastodon = Mastodon(client_id='./t2m_%s_clientcred.txt' % instance, api_base_url="https://%s" % instance)
+
         print "Not credentials for mastodon account '%s', creating them (the password will NOT be saved)" % mastodon_handle
         mastodon.log_in(
             argh.io.safe_input("Email for mastodon account '%s': " % mastodon_handle).strip(),
-            getpass("Password for mastodon account of '%s': " % mastodon_handle),
-            to_file=mastodon_creds
+            getpass("Password for mastodon account of '%s' (won't be stored): " % mastodon_handle),
+            to_file=mastodon_creds,
         )
 
-    mastodon = Mastodon(client_id='./t2m_clientcred.txt', access_token=mastodon_creds)
+    mastodon = Mastodon(client_id='./t2m_%s_clientcred.txt' % instance, access_token=mastodon_creds, api_base_url='https://%s' % instance)
 
     to_toot = []
 
@@ -152,14 +165,17 @@ def add(twitter_handle, mastodon_handle):
     if os.path.exists("t2m_%s_creds.txt" % mastodon_handle.split("@")[0]):
         shutil.move("t2m_%s_creds.txt" % mastodon_handle.split("@")[0], mastodon_creds)
 
+    mastodon_nick, instance = mastodon_handle.split("@", 1)
+
+    ensure_client_existe_for_instance(instance)
     if not os.path.exists(mastodon_creds):
-        mastodon = Mastodon(client_id='./t2m_clientcred.txt')
+        mastodon = Mastodon(client_id='./t2m_clientcred.txt', api_base_url="https://%s" % instance)
 
         print "Grabbing credentials for mastodon handle (password will NOT be stored"
         mastodon.log_in(
             argh.io.safe_input("Email for mastodon account '%s': " % mastodon_handle).strip(),
             getpass("Password for mastodon account of '%s': " % mastodon_handle),
-            to_file=mastodon_creds
+            to_file=mastodon_creds,
         )
 
     if twitter_handle in db:
@@ -183,9 +199,6 @@ parser = argh.ArghParser()
 parser.add_commands([one, all, add, list])
 
 if __name__ == '__main__':
-    if not os.path.exists("./t2m_clientcred.txt"):
-        Mastodon.create_app('t2m', to_file = 't2m_clientcred.txt')
-
     if not os.path.exists("./conf.yaml"):
         print "You need to have a conf.yaml file containing twitter connection informations, please read the documentation https://github.com/Psycojoker/t2m#installation"
         sys.exit(1)
