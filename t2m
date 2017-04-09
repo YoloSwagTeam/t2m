@@ -71,7 +71,8 @@ def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_a
         if not only_mark_as_seen:
             to_toot.append(text)
 
-        db.setdefault(twitter_handle, {}).setdefault("done", []).append(i.id)
+        if not debug:
+            db.setdefault(twitter_handle, {}).setdefault("done", []).append(i.id)
 
     # slices selected tweets if specified
     if number is not None:
