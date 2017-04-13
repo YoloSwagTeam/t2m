@@ -42,7 +42,7 @@ def ensure_client_existe_for_instance(instance):
         )
 
 
-def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_as_seen=False):
+def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_as_seen=False, retweets=False):
     t = twitter.Api(**yaml.safe_load(open("conf.yaml")))
 
     if not "@" in mastodon_handle:
@@ -68,32 +68,47 @@ def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_a
 
     to_toot = []
 
+    if retweets:
+        with open("retweet.tmpl") as f:
+            retweet_template = f.read()
+
     # select tweets first
     for i in reversed(t.GetUserTimeline(screen_name=twitter_handle, count=200)):
 
-        # do not forward retweets for now
         if i.retweeted_status:
-            continue
+            if retweets:
+                text = retweet_template % {
+                    "text": i.retweeted_status.text,
+                    "user": i.retweeted_status.user.screen_name,
+                    "id": i.retweeted_status.id
+                }
 
-        # do not forward pseudo-private answer for now
-        if i.text.startswith("@"):
-            continue
+                urls = i.retweeted_status.urls
+                media = i.retweeted_status.media
+            else:
+                continue
+        else:
+            # do not forward pseudo-private answer for now
+            if i.text.startswith("@"):
+                continue
+
+            text = i.text
+            urls = i.urls
+            media = i.media
 
         # do not forward already forwarded tweets
         if i.id in db.get(twitter_handle, {}).setdefault("done", []):
             continue
 
-        text = i.text
-
         # remove this t.co crap
-        for url in i.urls:
+        for url in urls:
             text = text.replace(url.url, url.expanded_url)
 
         if not only_mark_as_seen:
             to_toot.append({
                 "text": text,
                 "id": i.id,
-                "medias": [x.media_url for x in i.media] if i.media else []
+                "medias": [x.media_url for x in media] if media else []
             })
 
         if only_mark_as_seen:
@@ -141,7 +156,7 @@ def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_a
     return db
 
 
-def one(twitter_handle, mastodon_handle=None, number=None, only_mark_as_seen=False, debug=False):
+def one(twitter_handle, mastodon_handle=None, number=None, only_mark_as_seen=False, debug=False, retweets=False):
     db = get_db()
 
     if mastodon_handle is None and twitter_handle not in db:
@@ -161,13 +176,13 @@ def one(twitter_handle, mastodon_handle=None, number=None, only_mark_as_seen=Fal
     # force set new mastodon handle
     db.setdefault(twitter_handle, {})["mastodon"] = mastodon_handle
 
-    db = forward(db, twitter_handle, mastodon_handle, debug=debug, number=number, only_mark_as_seen=only_mark_as_seen)
+    db = forward(db, twitter_handle, mastodon_handle, debug=debug, number=number, only_mark_as_seen=only_mark_as_seen, retweets=retweets)
 
     save_db(db)
 
 
 
-def all(debug=False):
+def all(debug=False, retweets=False):
     db = get_db()
 
     for twitter_handle in db:
@@ -175,7 +190,7 @@ def all(debug=False):
             print("WARNING: not mastodon handle for twitter account '%s', add one using './t2m add' command" % (twitter_handle))
             continue
 
-        db = forward(db, twitter_handle, db[twitter_handle]["mastodon"], debug)
+        db = forward(db, twitter_handle, db[twitter_handle]["mastodon"], debug, retweets=retweets)
 
     save_db(db)
 
