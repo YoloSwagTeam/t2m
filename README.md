@@ -49,7 +49,7 @@ Forward for one account:
 This will forward all not already forwarded tweet (this can be up to 200) while
 waiting 30 seconds between each toot. This will also remember the mastodon account (so you don't need to specify it again).
 
-RT and tweets that starts with a "@" won't be forwarded.
+Tweets that starts with a "@" won't be forwarded.  Retweets won't be forwarded unless the `-r` option is specified.
 
 You might want a finer control on your action, so you can do:
 
@@ -89,6 +89,15 @@ You can also add an account directly without using the `one` command using:
 
     ./t2m add twitter_account mastodon_account
 
+## Retweets
+
+When enabled, retweets are forwarded using the `retweet.tmpl` file as a template, feel free to edit it to suit your needs.  The following tokens will be replaced in the template:
+
+* `%(text)s`: the retweeted text
+* `%(user)s`: the original tweet author username
+* `%(id)s`: the original tweet id
+
+To create a link to the original tweet, use `https://twitter.com/%(user)s/status/%(id)s`.  To link to the original author profile, use `https://twitter.com/%(user)s`.
 
 # Licence
 
