@@ -138,6 +138,8 @@ def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_a
                     assert not response.get("error"), response
                     forwarded += 1
                 except Exception as e:
+                    import traceback
+                    traceback.print_exc()
                     print("ERROR: could not forward the twitt [%s] '%s' because '%s', skipping for now" % (toot["id"], toot["text"], e))
                     continue
 
