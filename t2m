@@ -120,6 +120,7 @@ def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_a
 
     tmp_dir = tempfile.mkdtemp()
 
+    forwarded = 0
     # actually forward
     if not only_mark_as_seen:
         for toot in to_toot:
@@ -135,6 +136,7 @@ def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_a
 
                     response = mastodon.status_post(toot["text"], media_ids=medias)
                     assert not response.get("error"), response
+                    forwarded += 1
                 except Exception as e:
                     print("ERROR: could not forward the twitt [%s] '%s' because '%s', skipping for now" % (toot["id"], toot["text"], e))
                     continue
@@ -149,7 +151,7 @@ def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_a
     elif not to_toot:
         print("Nothing to do for %s" % twitter_handle)
     else:
-        print("Forwarded %s tweets from %s to %s" % (len(to_toot), twitter_handle, mastodon_handle))
+        print("Forwarded %s tweets from %s to %s" % (forwarded, twitter_handle, mastodon_handle))
 
     shutil.rmtree(tmp_dir, ignore_errors=True)
 
