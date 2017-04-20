@@ -136,7 +136,7 @@ def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_a
                     response = mastodon.status_post(toot["text"], media_ids=medias)
                     assert not response.get("error"), response
                 except Exception as e:
-                    print("ERROR: could not forward the twitt [%s] '%s' because '%s', skipping for now" % (toot["id"], i["text"], e))
+                    print("ERROR: could not forward the twitt [%s] '%s' because '%s', skipping for now" % (toot["id"], toot["text"], e))
                     continue
 
                 print("[forwarding] >>", toot["text"].encode("Utf-8"), " ".join(toot["medias"]))
