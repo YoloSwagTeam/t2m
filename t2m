@@ -43,7 +43,7 @@ def ensure_client_existe_for_instance(instance):
 
 
 def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_as_seen=False, retweets=False):
-    t = twitter.Api(**yaml.safe_load(open("conf.yaml")))
+    t = twitter.Api(tweet_mode='extended', **yaml.safe_load(open("conf.yaml")))
 
     if not "@" in mastodon_handle:
         print("ERROR: we now handle multi-instances, you need to update the mastodon handle '%s' by doing './t2m add %s %s@theinstance.com'" % (mastodon_handle, twitter_handle, mastodon_handle))
@@ -78,7 +78,7 @@ def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_a
         if i.retweeted_status:
             if retweets:
                 text = retweet_template % {
-                    "text": i.retweeted_status.text,
+                    "text": i.retweeted_status.full_text,
                     "user": i.retweeted_status.user.screen_name,
                     "id": i.retweeted_status.id
                 }
@@ -89,10 +89,10 @@ def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_a
                 continue
         else:
             # do not forward pseudo-private answer for now
-            if i.text.startswith("@"):
+            if i.full_text.startswith("@"):
                 continue
 
-            text = i.text
+            text = i.full_text
             urls = i.urls
             media = i.media
 
