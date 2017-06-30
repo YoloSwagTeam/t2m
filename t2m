@@ -69,7 +69,7 @@ def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_a
     to_toot = []
 
     if retweets:
-        with open("retweet.tmpl") as f:
+        with open("retweet.tmpl", encoding="utf-8") as f:
             retweet_template = f.read()
 
     # select tweets first
