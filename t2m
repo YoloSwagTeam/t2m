@@ -76,16 +76,23 @@ def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_a
     # select tweets first
     for i in reversed(t.GetUserTimeline(screen_name=twitter_handle, count=200)):
 
-        if i.retweeted_status:
+        retweeted_status = i.retweeted_status
+        if not retweeted_status:
+            retweeted_status = i.quoted_status
+
+        if retweeted_status:
             if retweets:
                 text = retweet_template % {
-                    "text": i.retweeted_status.full_text,
-                    "user": i.retweeted_status.user.screen_name,
-                    "id": i.retweeted_status.id
+                    "text": retweeted_status.full_text,
+                    "user": retweeted_status.user.screen_name,
+                    "id": retweeted_status.id
                 }
 
-                urls = i.retweeted_status.urls
-                media = i.retweeted_status.media
+                if i.quoted_status:
+                    text = i.full_text + "\n\n" + text
+
+                urls = retweeted_status.urls
+                media = retweeted_status.media
             else:
                 continue
         else:
