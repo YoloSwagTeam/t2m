@@ -87,6 +87,9 @@ def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_a
                     "id": retweeted_status.id
                 }
 
+                if i.quoted_status:
+                    text = i.full_text + "\n\n" + text
+
                 urls = retweeted_status.urls
                 media = retweeted_status.media
             else:
