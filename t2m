@@ -23,6 +23,11 @@ import twitter
 
 from mastodon import Mastodon
 
+try:
+    from HTMLParser import HTMLParser
+except ImportError:
+    from html.parser import HTMLParser
+
 
 def get_db():
     if os.path.exists("db.json"):
@@ -113,8 +118,9 @@ def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_a
             text = text.replace(url.url, url.expanded_url)
 
         if not only_mark_as_seen:
+            h = HTMLParser()
             to_toot.append({
-                "text": text,
+                "text": h.unescape(text),
                 "id": i.id,
                 "medias": [x.media_url for x in media] if media else []
             })
