@@ -102,9 +102,7 @@ def forward(db, twitter_handle, mastodon_handle, debug=False, number=None,
     for i in reversed(t.GetUserTimeline(screen_name=twitter_handle,
                                         count=200)):
 
-        retweeted_status = i.retweeted_status
-        if not retweeted_status:
-            retweeted_status = i.quoted_status
+        retweeted_status = i.retweeted_status or i.quoted_status
 
         if retweeted_status:
             if retweets:
@@ -275,12 +273,7 @@ def add(twitter_handle, mastodon_handle):
             to_file=mastodon_creds,
         )
 
-    if twitter_handle in db:
-        db[twitter_handle]["mastodon"] = mastodon_handle
-    else:
-        db[twitter_handle] = {
-            "mastodon": mastodon_handle
-        }
+    db.setdefault(twitter_handle, {})["mastodon"] = mastodon_handle
 
     save_db(db)
     print("done")
