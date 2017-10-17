@@ -143,8 +143,7 @@ def forward(db, twitter_handle, mastodon_handle, debug=False, number=None,
                 "id": i.id,
                 "medias": [x.media_url for x in media] if media else []
             })
-
-        if only_mark_as_seen:
+        else:
             db.setdefault(twitter_handle, {}).setdefault("done", []).append(
                 i.id)
 
