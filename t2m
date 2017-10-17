@@ -61,7 +61,7 @@ def check_complete_mastodon_handle(mastodon_handle, twitter_handle):
         sys.exit(1)
 
 
-def forward(db, twitter_handle, mastodon_handle, debug, number=None,
+def forward(db, twitter_handle, mastodon_handle, debug=False, number=None,
             only_mark_as_seen=False, retweets=False):
 
     with open("conf.yaml") as fobj:
@@ -238,8 +238,8 @@ def all(debug=False, retweets=False):
                   "add one using 't2m add' command" % (twitter_handle))
             continue
 
-        db = forward(db, twitter_handle, db[twitter_handle]["mastodon"], debug,
-                     retweets=retweets)
+        db = forward(db, twitter_handle, db[twitter_handle]["mastodon"],
+                     debug=debug, retweets=retweets)
 
     save_db(db)
 
