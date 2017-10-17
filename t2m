@@ -49,17 +49,25 @@ def ensure_client_exists_for_instance(instance):
                             )
 
 
+def check_complete_mastodon_handle(mastodon_handle, twitter_handle):
+    if "@" not in mastodon_handle:
+        msg = ("ERROR: multiple instances are now handled, but your mastodon"
+               " handle %(mastodon)r needs the instance name. Please add it"
+               " using:\n%(exe)s add %(twitter)s %(mastodon)s@theinstance.com")
+        ctx = {"exe": sys.argv[0],
+               "twitter": twitter_handle,
+               "mastodon": mastodon_handle}
+        print(msg % ctx, file=sys.stderr)
+        sys.exit(1)
+
+
 def forward(db, twitter_handle, mastodon_handle, debug, number=None,
             only_mark_as_seen=False, retweets=False):
 
     with open("conf.yaml") as fobj:
         t = twitter.Api(tweet_mode='extended', **yaml.safe_load(fobj))
 
-    if "@" not in mastodon_handle:
-        print("ERROR: we now handle multi-instances, you need to update the "
-              "mastodon handle '%s' by doing './t2m add %s %s@theinstance.com'"
-              % (mastodon_handle, twitter_handle, mastodon_handle))
-        sys.exit(1)
+    check_complete_mastodon_handle(mastodon_handle, twitter_handle)
 
     mastodon_nick, instance = mastodon_handle.split("@", 1)
 
@@ -208,17 +216,8 @@ def one(twitter_handle, mastodon_handle=None, number=None,
 
     if mastodon_handle is None and twitter_handle in db:
         mastodon_handle = db[twitter_handle]["mastodon"]
-        if "@" not in mastodon_handle:
-            print("ERROR: we now handle multi-instances, you need to update "
-                  "the mastodon handle by doing "
-                  "'./t2m add %s %s@theinstance.com'"
-                  % (twitter_handle, mastodon_handle))
-            sys.exit(1)
 
-    if "@" not in mastodon_handle:
-        print("ERROR: you should add the mastodon instance to the mastodon "
-              "handle this way: %s@theinstance.com" % (mastodon_handle))
-        sys.exit(1)
+    check_complete_mastodon_handle(mastodon_handle, twitter_handle)
 
     # force set new mastodon handle
     db.setdefault(twitter_handle, {})["mastodon"] = mastodon_handle
@@ -248,10 +247,7 @@ def all(debug=False, retweets=False):
 def add(twitter_handle, mastodon_handle):
     db = get_db()
 
-    if "@" not in mastodon_handle:
-        print("ERROR: you should add the mastodon instance to the mastodon "
-              "handle this way: %s@theinstance.com" % (mastodon_handle))
-        sys.exit(1)
+    check_complete_mastodon_handle(mastodon_handle, twitter_handle)
 
     mastodon_creds = "t2m_%s_creds.txt" % mastodon_handle
 
