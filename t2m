@@ -29,15 +29,16 @@ except ImportError:
     from html.parser import HTMLParser
 
 
-def get_db():
-    if os.path.exists("db.json"):
-        return json.load(open("db.json", "r"))
-
+def get_db(path="db.json"):
+    if os.path.isfile(path):
+        with open(path) as fobj:
+            return json.load(fobj)
     return {}
 
 
-def save_db(db):
-    json.dump(db, open("db.json", "w"), indent=4)
+def save_db(db, path="db.json"):
+    with open(path, "w") as fobj:
+        json.dump(db, fobj, indent=4)
 
 
 def ensure_client_existe_for_instance(instance):
@@ -50,7 +51,9 @@ def ensure_client_existe_for_instance(instance):
 
 def forward(db, twitter_handle, mastodon_handle, debug, number=None,
             only_mark_as_seen=False, retweets=False):
-    t = twitter.Api(tweet_mode='extended', **yaml.safe_load(open("conf.yaml")))
+
+    with open("conf.yaml") as fobj:
+        t = twitter.Api(tweet_mode='extended', **yaml.safe_load(fobj))
 
     if "@" not in mastodon_handle:
         print("ERROR: we now handle multi-instances, you need to update the "
