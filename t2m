@@ -285,9 +285,6 @@ def list():
         print(" *", i)
 
 
-parser = argh.ArghParser()
-parser.add_commands([one, all, add, list])
-
 if __name__ == '__main__':
     if not os.path.exists("conf.yaml"):
         print("You need to have a conf.yaml file containing twitter connection"
@@ -295,4 +292,6 @@ if __name__ == '__main__':
               " https://github.com/Psycojoker/t2m#installation")
         sys.exit(1)
 
+    parser = argh.ArghParser()
+    parser.add_commands([one, all, add, list])
     parser.dispatch()
