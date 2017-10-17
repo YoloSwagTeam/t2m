@@ -41,8 +41,8 @@ def save_db(db, path="db.json"):
         json.dump(db, fobj, indent=4)
 
 
-def ensure_client_existe_for_instance(instance):
-    if not os.path.exists("./t2m_%s_clientcred.txt" % instance):
+def ensure_client_exists_for_instance(instance):
+    if not os.path.exists("t2m_%s_clientcred.txt" % instance):
         Mastodon.create_app('t2m',
                             to_file='t2m_%s_clientcred.txt' % instance,
                             api_base_url='https://%s' % instance,
@@ -63,11 +63,11 @@ def forward(db, twitter_handle, mastodon_handle, debug, number=None,
 
     mastodon_nick, instance = mastodon_handle.split("@", 1)
 
-    ensure_client_existe_for_instance(instance)
+    ensure_client_exists_for_instance(instance)
 
     mastodon_creds = "t2m_%s_creds.txt" % mastodon_handle
     if not os.path.exists(mastodon_creds):
-        mastodon = Mastodon(client_id='./t2m_%s_clientcred.txt' % instance,
+        mastodon = Mastodon(client_id='t2m_%s_clientcred.txt' % instance,
                             api_base_url="https://%s" % instance)
 
         print("Not credentials for mastodon account '%s', creating them "
@@ -80,7 +80,7 @@ def forward(db, twitter_handle, mastodon_handle, debug, number=None,
             to_file=mastodon_creds,
         )
 
-    mastodon = Mastodon(client_id='./t2m_%s_clientcred.txt' % instance,
+    mastodon = Mastodon(client_id='t2m_%s_clientcred.txt' % instance,
                         access_token=mastodon_creds,
                         api_base_url='https://%s' % instance)
 
@@ -236,7 +236,7 @@ def all(debug=False, retweets=False):
     for twitter_handle in db:
         if not db[twitter_handle].get("mastodon"):
             print("WARNING: not mastodon handle for twitter account '%s', "
-                  "add one using './t2m add' command" % (twitter_handle))
+                  "add one using 't2m add' command" % (twitter_handle))
             continue
 
         db = forward(db, twitter_handle, db[twitter_handle]["mastodon"], debug,
@@ -262,9 +262,9 @@ def add(twitter_handle, mastodon_handle):
 
     mastodon_nick, instance = mastodon_handle.split("@", 1)
 
-    ensure_client_existe_for_instance(instance)
+    ensure_client_exists_for_instance(instance)
     if not os.path.exists(mastodon_creds):
-        mastodon = Mastodon(client_id='./t2m_clientcred.txt',
+        mastodon = Mastodon(client_id='t2m_clientcred.txt',
                             api_base_url="https://%s" % instance)
 
         print("Grabbing credentials for mastodon handle "
@@ -298,7 +298,7 @@ parser = argh.ArghParser()
 parser.add_commands([one, all, add, list])
 
 if __name__ == '__main__':
-    if not os.path.exists("./conf.yaml"):
+    if not os.path.exists("conf.yaml"):
         print("You need to have a conf.yaml file containing twitter connection"
               " informations, please read the documentation"
               " https://github.com/Psycojoker/t2m#installation")
