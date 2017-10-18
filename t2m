@@ -72,10 +72,10 @@ def forward(db, twitter_handle, mastodon_handle, debug=False, number=None,
 
     mastodon_nick, instance = mastodon_handle.split("@", 1)
 
-    mastodon_creds = _login_to_mastodon(mastodon_handle)
+    client_id, access_token = _login_to_mastodon(mastodon_handle)
 
-    mastodon = Mastodon(client_id='t2m_%s_clientcred.txt' % instance,
-                        access_token=mastodon_creds,
+    mastodon = Mastodon(client_id=client_id,
+                        access_token=access_token,
                         api_base_url='https://%s' % instance)
 
     to_toot = []
@@ -231,10 +231,10 @@ def all(debug=False, retweets=False):
 
 def _login_to_mastodon(mastodon_handle):
     mastodon_nick, instance = mastodon_handle.split("@", 1)
-    ensure_client_exists_for_instance(instance)
-    mastodon_creds = "t2m_%s_creds.txt" % mastodon_handle
-    if not os.path.exists(mastodon_creds):
-        mastodon = Mastodon(client_id='t2m_%s_clientcred.txt' % instance,
+    client_id = ensure_client_exists_for_instance(instance)
+    access_token = "t2m_%s_creds.txt" % mastodon_handle
+    if not os.path.exists(access_token):
+        mastodon = Mastodon(client_id=client_id,
                             api_base_url="https://%s" % instance)
 
         print("No credential file found for mastodon account %r, "
@@ -244,9 +244,9 @@ def _login_to_mastodon(mastodon_handle):
                 "Email for mastodon account %r: " % mastodon_handle).strip(),
             getpass("Password for mastodon account of '%s' (won't be stored): "
                     % mastodon_handle),
-            to_file=mastodon_creds,
+            to_file=access_token,
         )
-    return mastodon_creds
+    return client_id, access_token
 
 
 def add(twitter_handle, mastodon_handle):
@@ -254,12 +254,11 @@ def add(twitter_handle, mastodon_handle):
 
     check_complete_mastodon_handle(mastodon_handle, twitter_handle)
 
-    mastodon_creds = "t2m_%s_creds.txt" % mastodon_handle
-
     # retrocompatibility
+    access_token = "t2m_%s_creds.txt" % mastodon_handle
     if os.path.exists("t2m_%s_creds.txt" % mastodon_handle.split("@")[0]):
         shutil.move("t2m_%s_creds.txt" % mastodon_handle.split("@")[0],
-                    mastodon_creds)
+                    access_token)
 
     _login_to_mastodon(mastodon_handle)
 
