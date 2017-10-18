@@ -192,14 +192,14 @@ def one(twitter_handle, mastodon_handle=None, number=None,
         only_mark_as_seen=False, debug=False, retweets=False):
     db = get_db()
 
-    if mastodon_handle is None and twitter_handle not in db:
-        print("ERROR: No associated mastodon account for twitter account %r. "
-              "Use the '-m' option to provide one." % twitter_handle,
-              file=sys.stderr)
-        sys.exit(1)
-
-    if mastodon_handle is None and twitter_handle in db:
-        mastodon_handle = db[twitter_handle]["mastodon"]
+    if mastodon_handle is None:
+        if twitter_handle not in db:
+            print("ERROR: No associated mastodon account for twitter account"
+                  " %r. Use the '-m' option to provide one." % twitter_handle,
+                  file=sys.stderr)
+            sys.exit(1)
+        else:
+            mastodon_handle = db[twitter_handle]["mastodon"]
 
     check_complete_mastodon_handle(mastodon_handle, twitter_handle)
 
