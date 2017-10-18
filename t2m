@@ -71,7 +71,6 @@ def forward(db, twitter_handle, mastodon_handle, debug=False, number=None,
 
     mastodon_nick, instance = mastodon_handle.split("@", 1)
 
-    ensure_client_exists_for_instance(instance)
     mastodon_creds = _login_to_mastodon(mastodon_handle)
 
     mastodon = Mastodon(client_id='t2m_%s_clientcred.txt' % instance,
@@ -231,6 +230,7 @@ def all(debug=False, retweets=False):
 
 def _login_to_mastodon(mastodon_handle):
     mastodon_nick, instance = mastodon_handle.split("@", 1)
+    ensure_client_exists_for_instance(instance)
     mastodon_creds = "t2m_%s_creds.txt" % mastodon_handle
     if not os.path.exists(mastodon_creds):
         mastodon = Mastodon(client_id='t2m_%s_clientcred.txt' % instance,
@@ -260,9 +260,6 @@ def add(twitter_handle, mastodon_handle):
         shutil.move("t2m_%s_creds.txt" % mastodon_handle.split("@")[0],
                     mastodon_creds)
 
-    mastodon_nick, instance = mastodon_handle.split("@", 1)
-
-    ensure_client_exists_for_instance(instance)
     _login_to_mastodon(mastodon_handle)
 
     db.setdefault(twitter_handle, {})["mastodon"] = mastodon_handle
