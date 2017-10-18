@@ -259,7 +259,7 @@ def add(twitter_handle, mastodon_handle):
 
     ensure_client_exists_for_instance(instance)
     if not os.path.exists(mastodon_creds):
-        mastodon = Mastodon(client_id='t2m_clientcred.txt',
+        mastodon = Mastodon(client_id="t2m_%s_clientcred.txt" % instance,
                             api_base_url="https://%s" % instance)
 
         print("Grabbing credentials for mastodon handle "
