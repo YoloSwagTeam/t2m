@@ -206,6 +206,8 @@ def _forward(db, twitter_handle, mastodon_handle, number=None,
              wait_seconds=30):
     """Internal function that does the actual tweet forwarding job.
 
+    This function modifies the given `db` parameter.
+
     See the `one` function doc for more information about its
     parameters.
 
@@ -225,7 +227,7 @@ def _forward(db, twitter_handle, mastodon_handle, number=None,
         done.extend([t["id"] for t in to_toot])
         print("Marked all available tweets as seen (%s tweets marked)"
               % len(to_toot))
-        return db
+        return
 
     # slices selected tweets if specified
     if number is not None:
@@ -266,7 +268,7 @@ def _forward(db, twitter_handle, mastodon_handle, number=None,
         print("Forwarded %s tweets from %s to %s"
               % (forwarded, twitter_handle, mastodon_handle))
 
-    return db
+    return
 
 
 def one(twitter_handle, mastodon_handle=None, number=None,
@@ -309,9 +311,9 @@ def one(twitter_handle, mastodon_handle=None, number=None,
     # force set new mastodon handle
     db.setdefault(twitter_handle, {})["mastodon"] = mastodon_handle
 
-    db = _forward(db, twitter_handle, mastodon_handle, number=number,
-                  only_mark_as_seen=only_mark_as_seen, retweets=retweets,
-                  debug=debug)
+    _forward(db, twitter_handle, mastodon_handle, number=number,
+             only_mark_as_seen=only_mark_as_seen, retweets=retweets,
+             debug=debug)
 
     _save_db(db)
 
@@ -339,8 +341,8 @@ def all(retweets=False, debug=False):
                   % twitter_handle)
             continue
 
-        db = _forward(db, twitter_handle, db[twitter_handle]["mastodon"],
-                      retweets=retweets, debug=debug)
+        _forward(db, twitter_handle, db[twitter_handle]["mastodon"],
+                 retweets=retweets, debug=debug)
 
     _save_db(db)
 
