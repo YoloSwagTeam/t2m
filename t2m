@@ -87,36 +87,35 @@ def _check_complete_mastodon_handle(mastodon_handle, twitter_handle):
         sys.exit(1)
 
 
-def _forward(db, twitter_handle, mastodon_handle, number=None,
-             only_mark_as_seen=False, retweets=False, debug=False):
-    """Internal function that does the actual tweet forwarding job.
+def _collect_toots(twitter_client, twitter_handle, done=(), retweets=False,
+                   max_tweets=200):
+    """Return a list of dicts describing toots to be sent.
 
-    See the `one` function doc for more information about its
-    parameters.
+    Given `twitter_handle` and the `done` list of already sent tweet
+    ids (defaults to the empty list), `twitter_client` is used to
+    fetch tweets' textual content and medias. The last `max_tweets` are
+    fetched (defaults to 200), and retweets are ignored unless the
+    `retweets` parameter is set to a truthy value.
+
+    An item of the return list as the following model:
+
+    {
+        "text": <the textual content of the tweet>,
+        "id": <the original tweet id>,
+        "medias": <the list of attached media URLs (t.co URLs are expanded)>
+    }
 
     """
-    with open("conf.yaml") as fobj:
-        t = twitter.Api(tweet_mode='extended', **yaml.safe_load(fobj))
-
-    _check_complete_mastodon_handle(mastodon_handle, twitter_handle)
-
-    mastodon_nick, instance = mastodon_handle.split("@", 1)
-
-    client_id, access_token = _login_to_mastodon(mastodon_handle)
-
-    mastodon = Mastodon(client_id=client_id,
-                        access_token=access_token,
-                        api_base_url='https://%s' % instance)
-
-    to_toot = []
+    toots = []
 
     if retweets:
         with codecs.open("retweet.tmpl", encoding="utf-8") as f:
             retweet_template = f.read()
 
-    # select tweets first
-    for i in reversed(t.GetUserTimeline(screen_name=twitter_handle,
-                                        count=200)):
+    h = HTMLParser()
+
+    for i in reversed(twitter_client.GetUserTimeline(
+            screen_name=twitter_handle, count=max_tweets)):
 
         retweeted_status = i.retweeted_status or i.quoted_status
 
@@ -145,23 +144,51 @@ def _forward(db, twitter_handle, mastodon_handle, number=None,
             media = i.media
 
         # do not forward already forwarded tweets
-        if i.id in db.get(twitter_handle, {}).setdefault("done", []):
+        if i.id in done:
             continue
 
         # remove this t.co crap
         for url in urls:
             text = text.replace(url.url, url.expanded_url)
 
-        if not only_mark_as_seen:
-            h = HTMLParser()
-            to_toot.append({
-                "text": h.unescape(text),
-                "id": i.id,
-                "medias": [x.media_url for x in media] if media else []
-            })
-        else:
-            db.setdefault(twitter_handle, {}).setdefault("done", []).append(
-                i.id)
+        toots.append({
+            "text": h.unescape(text),
+            "id": i.id,
+            "medias": [x.media_url for x in media] if media else []
+        })
+
+    return toots
+
+
+def _forward(db, twitter_handle, mastodon_handle, number=None,
+             only_mark_as_seen=False, retweets=False, debug=False):
+    """Internal function that does the actual tweet forwarding job.
+
+    See the `one` function doc for more information about its
+    parameters.
+
+    """
+    with open("conf.yaml") as fobj:
+        t = twitter.Api(tweet_mode='extended', **yaml.safe_load(fobj))
+
+    _check_complete_mastodon_handle(mastodon_handle, twitter_handle)
+
+    mastodon_nick, instance = mastodon_handle.split("@", 1)
+
+    client_id, access_token = _login_to_mastodon(mastodon_handle)
+
+    mastodon = Mastodon(client_id=client_id,
+                        access_token=access_token,
+                        api_base_url='https://%s' % instance)
+
+    done = db.setdefault(twitter_handle, {}).setdefault("done", [])
+
+    to_toot = _collect_toots(t, twitter_handle, done=done, retweets=retweets)
+    if only_mark_as_seen:
+        done.extend([t["id"] for t in to_toot])
+        print("Marked all available tweets as seen (%s tweets marked)"
+              % len(to_toot))
+        return db
 
     # slices selected tweets if specified
     if number is not None:
@@ -205,9 +232,7 @@ def _forward(db, twitter_handle, mastodon_handle, number=None,
                 _save_db(db)
                 time.sleep(30)
 
-    if only_mark_as_seen:
-        print("Mark all available tweets as seen")
-    elif not to_toot:
+    if not to_toot:
         print("Nothing to do for %s" % twitter_handle)
     else:
         print("Forwarded %s tweets from %s to %s"
