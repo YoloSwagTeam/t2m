@@ -202,11 +202,15 @@ def _get_mastodon_client(mastodon_handle):
 
 
 def _forward(db, twitter_handle, mastodon_handle, number=None,
-             only_mark_as_seen=False, retweets=False, debug=False):
+             only_mark_as_seen=False, retweets=False, debug=False,
+             wait_seconds=30):
     """Internal function that does the actual tweet forwarding job.
 
     See the `one` function doc for more information about its
     parameters.
+
+    The `wait_seconds` parameter is the time between we wait between
+    two sendings.
 
     """
     with open("conf.yaml") as fobj:
@@ -230,11 +234,13 @@ def _forward(db, twitter_handle, mastodon_handle, number=None,
     _check_complete_mastodon_handle(mastodon_handle, twitter_handle)
     mastodon = _get_mastodon_client(mastodon_handle)
 
-    for toot in to_toot:
+    for num, toot in enumerate(to_toot):
         if debug:
             print(">>", toot["text"].encode("Utf-8"),
                   " ".join(toot["medias"]))
             continue
+        if wait_seconds and num > 0:
+            time.sleep(wait_seconds)
         try:
             _send_toot(mastodon, toot)
         except Exception as e:
@@ -251,7 +257,6 @@ def _forward(db, twitter_handle, mastodon_handle, number=None,
               " ".join(toot["medias"]))
         done.append(toot["id"])
         _save_db(db)
-        time.sleep(30)
 
     if not to_toot:
         print("Nothing to do for %s" % twitter_handle)
