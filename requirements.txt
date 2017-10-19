@@ -1,4 +1,0 @@
-Mastodon.py
-python-twitter
-pyyaml
-argh

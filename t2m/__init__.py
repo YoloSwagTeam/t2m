@@ -1,8 +1,6 @@
-#!/usr/bin/env python
-
 from __future__ import print_function
 
-import os
+import os.path as osp
 import sys
 import json
 import time
@@ -29,6 +27,9 @@ except ImportError:
     from html.parser import HTMLParser
 
 
+HERE = osp.abspath(osp.dirname(__file__))
+
+
 def _get_db(path="db.json"):
     """Return the database content from `path` (defaults to "db.json").
 
@@ -43,7 +44,7 @@ def _get_db(path="db.json"):
     }
 
     """
-    if os.path.isfile(path):
+    if osp.isfile(path):
         with open(path) as fobj:
             return json.load(fobj)
     return {}
@@ -61,7 +62,7 @@ def _save_db(db, path="db.json"):
 def _ensure_client_exists_for_instance(instance):
     "Create the client creds file if it does not exist, and return its path."
     client_id = "t2m_%s_clientcred.txt" % instance
-    if not os.path.exists(client_id):
+    if not osp.exists(client_id):
         Mastodon.create_app('t2m', to_file=client_id,
                             api_base_url='https://%s' % instance,
                             )
@@ -109,8 +110,9 @@ def _collect_toots(twitter_client, twitter_handle, done=(), retweets=False,
     toots = []
 
     if retweets:
-        with codecs.open("retweet.tmpl", encoding="utf-8") as f:
-            retweet_template = f.read()
+        with codecs.open(osp.join(HERE, "retweet.tmpl"),
+                         encoding="utf-8") as fobj:
+            retweet_template = fobj.read()
 
     h = HTMLParser()
 
@@ -178,8 +180,8 @@ def _send_toot(mastodon, toot):
     try:
         medias = []
         for number, media_url in enumerate(toot["medias"]):
-            dl_file_path = os.path.join(tmp_dir, str(number) + "."
-                                        + media_url.split(".")[-1])
+            dl_file_path = osp.join(tmp_dir, str(number) + "."
+                                    + media_url.split(".")[-1])
             urlretrieve(media_url, dl_file_path)
             medias.append(mastodon.media_post(dl_file_path)["id"])
 
@@ -359,7 +361,7 @@ def _login_to_mastodon(mastodon_handle):
     instance = mastodon_handle.split("@", 1)[1]
     client_id = _ensure_client_exists_for_instance(instance)
     access_token = "t2m_%s_creds.txt" % mastodon_handle
-    if not os.path.exists(access_token):
+    if not osp.exists(access_token):
         mastodon = Mastodon(client_id=client_id,
                             api_base_url="https://%s" % instance)
 
@@ -383,7 +385,7 @@ def add(twitter_handle, mastodon_handle):
 
     # retrocompatibility
     access_token = "t2m_%s_creds.txt" % mastodon_handle
-    if os.path.exists("t2m_%s_creds.txt" % mastodon_handle.split("@")[0]):
+    if osp.exists("t2m_%s_creds.txt" % mastodon_handle.split("@")[0]):
         shutil.move("t2m_%s_creds.txt" % mastodon_handle.split("@")[0],
                     access_token)
 
@@ -402,8 +404,8 @@ def list():
         print(" *", i)
 
 
-if __name__ == '__main__':
-    if not os.path.exists("conf.yaml"):
+def main():
+    if not osp.exists("conf.yaml"):
         print("You need to have a conf.yaml file containing twitter connection"
               " informations, please read the documentation"
               " https://github.com/Psycojoker/t2m#installation")
@@ -412,3 +414,7 @@ if __name__ == '__main__':
     parser = argh.ArghParser()
     parser.add_commands([one, all, add, list])
     parser.dispatch()
+
+
+if __name__ == '__main__':
+    main()
