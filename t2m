@@ -214,11 +214,13 @@ def _forward(db, twitter_handle, mastodon_handle, number=None,
 
     """
     with open("conf.yaml") as fobj:
-        t = twitter.Api(tweet_mode='extended', **yaml.safe_load(fobj))
+        twitter_client = twitter.Api(
+            tweet_mode='extended', **yaml.safe_load(fobj))
 
     done = db.setdefault(twitter_handle, {}).setdefault("done", [])
 
-    to_toot = _collect_toots(t, twitter_handle, done=done, retweets=retweets)
+    to_toot = _collect_toots(twitter_client, twitter_handle,
+                             done=done, retweets=retweets)
     if only_mark_as_seen:
         done.extend([t["id"] for t in to_toot])
         print("Marked all available tweets as seen (%s tweets marked)"
