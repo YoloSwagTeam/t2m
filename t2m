@@ -160,6 +160,36 @@ def _collect_toots(twitter_client, twitter_handle, done=(), retweets=False,
     return toots
 
 
+def _send_toot(mastodon, toot):
+    """Send a toot given its description in the `toot` parameter.
+
+    See the `_collect_toots` function for the expected description
+    format.
+
+    This function fetches all media URLs of `toot` in a temporary
+    directory (removed afterwards) and uses the given Mastodon client
+    `mastodon` to send them along with the toot's textual content.
+
+    It may raise an AssertionError if the client does not succeed to
+    send to given toot.
+
+    """
+    tmp_dir = tempfile.mkdtemp()
+    try:
+        medias = []
+        for number, media_url in enumerate(toot["medias"]):
+            dl_file_path = os.path.join(tmp_dir, str(number) + "."
+                                        + media_url.split(".")[-1])
+            urlretrieve(media_url, dl_file_path)
+            medias.append(mastodon.media_post(dl_file_path)["id"])
+
+        response = mastodon.status_post(toot["text"],
+                                        media_ids=medias)
+        assert not response.get("error"), response
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+
+
 def _forward(db, twitter_handle, mastodon_handle, number=None,
              only_mark_as_seen=False, retweets=False, debug=False):
     """Internal function that does the actual tweet forwarding job.
@@ -194,27 +224,17 @@ def _forward(db, twitter_handle, mastodon_handle, number=None,
     if number is not None:
         to_toot = to_toot[-int(number):]
 
-    tmp_dir = tempfile.mkdtemp()
-
-    forwarded = 0
     # actually forward
+    forwarded = 0
+    done = db.setdefault(twitter_handle, {}).setdefault("done", [])
+
     for toot in to_toot:
         if debug:
             print(">>", toot["text"].encode("Utf-8"),
                   " ".join(toot["medias"]))
             continue
         try:
-            medias = []
-            for number, media_url in enumerate(toot["medias"]):
-                dl_file_path = os.path.join(tmp_dir, str(number) + "."
-                                            + media_url.split(".")[-1])
-                urlretrieve(media_url, dl_file_path)
-                medias.append(mastodon.media_post(dl_file_path)["id"])
-
-            response = mastodon.status_post(toot["text"],
-                                            media_ids=medias)
-            assert not response.get("error"), response
-            forwarded += 1
+            _send_toot(mastodon, toot)
         except Exception as e:
             import traceback
             traceback.print_exc()
@@ -223,11 +243,11 @@ def _forward(db, twitter_handle, mastodon_handle, number=None,
                   % (toot["id"], toot["text"], e))
             continue
 
+        forwarded += 1
         print("[forwarding] >>",
               toot["text"].encode("Utf-8"),
               " ".join(toot["medias"]))
-        db.setdefault(twitter_handle, {}).setdefault(
-            "done", []).append(toot["id"])
+        done.append(toot["id"])
         _save_db(db)
         time.sleep(30)
 
@@ -236,8 +256,6 @@ def _forward(db, twitter_handle, mastodon_handle, number=None,
     else:
         print("Forwarded %s tweets from %s to %s"
               % (forwarded, twitter_handle, mastodon_handle))
-
-    shutil.rmtree(tmp_dir, ignore_errors=True)
 
     return db
 
