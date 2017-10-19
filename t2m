@@ -198,39 +198,38 @@ def _forward(db, twitter_handle, mastodon_handle, number=None,
 
     forwarded = 0
     # actually forward
-    if not only_mark_as_seen:
-        for toot in to_toot:
-            if debug:
-                print(">>", toot["text"].encode("Utf-8"),
-                      " ".join(toot["medias"]))
-            else:
-                try:
-                    medias = []
-                    for number, media_url in enumerate(toot["medias"]):
-                        dl_file_path = os.path.join(tmp_dir, str(number) + "."
-                                                    + media_url.split(".")[-1])
-                        urlretrieve(media_url, dl_file_path)
-                        medias.append(mastodon.media_post(dl_file_path)["id"])
+    for toot in to_toot:
+        if debug:
+            print(">>", toot["text"].encode("Utf-8"),
+                  " ".join(toot["medias"]))
+        else:
+            try:
+                medias = []
+                for number, media_url in enumerate(toot["medias"]):
+                    dl_file_path = os.path.join(tmp_dir, str(number) + "."
+                                                + media_url.split(".")[-1])
+                    urlretrieve(media_url, dl_file_path)
+                    medias.append(mastodon.media_post(dl_file_path)["id"])
 
-                    response = mastodon.status_post(toot["text"],
-                                                    media_ids=medias)
-                    assert not response.get("error"), response
-                    forwarded += 1
-                except Exception as e:
-                    import traceback
-                    traceback.print_exc()
-                    print("ERROR: could not forward the twitt [%s] '%s' "
-                          "because '%s', skipping for now"
-                          % (toot["id"], toot["text"], e))
-                    continue
+                response = mastodon.status_post(toot["text"],
+                                                media_ids=medias)
+                assert not response.get("error"), response
+                forwarded += 1
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                print("ERROR: could not forward the twitt [%s] '%s' "
+                      "because '%s', skipping for now"
+                      % (toot["id"], toot["text"], e))
+                continue
 
-                print("[forwarding] >>",
-                      toot["text"].encode("Utf-8"),
-                      " ".join(toot["medias"]))
-                db.setdefault(twitter_handle, {}).setdefault(
-                    "done", []).append(toot["id"])
-                _save_db(db)
-                time.sleep(30)
+            print("[forwarding] >>",
+                  toot["text"].encode("Utf-8"),
+                  " ".join(toot["medias"]))
+            db.setdefault(twitter_handle, {}).setdefault(
+                "done", []).append(toot["id"])
+            _save_db(db)
+            time.sleep(30)
 
     if not to_toot:
         print("Nothing to do for %s" % twitter_handle)
