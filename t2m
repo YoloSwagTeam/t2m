@@ -190,6 +190,17 @@ def _send_toot(mastodon, toot):
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
+def _get_mastodon_client(mastodon_handle):
+    " Return a Mastodon client for the given handle. "
+    instance = mastodon_handle.split("@", 1)[1]
+
+    client_id, access_token = _login_to_mastodon(mastodon_handle)
+
+    return Mastodon(client_id=client_id,
+                    access_token=access_token,
+                    api_base_url='https://%s' % instance)
+
+
 def _forward(db, twitter_handle, mastodon_handle, number=None,
              only_mark_as_seen=False, retweets=False, debug=False):
     """Internal function that does the actual tweet forwarding job.
@@ -200,15 +211,6 @@ def _forward(db, twitter_handle, mastodon_handle, number=None,
     """
     with open("conf.yaml") as fobj:
         t = twitter.Api(tweet_mode='extended', **yaml.safe_load(fobj))
-
-    _check_complete_mastodon_handle(mastodon_handle, twitter_handle)
-    instance = mastodon_handle.split("@", 1)[1]
-
-    client_id, access_token = _login_to_mastodon(mastodon_handle)
-
-    mastodon = Mastodon(client_id=client_id,
-                        access_token=access_token,
-                        api_base_url='https://%s' % instance)
 
     done = db.setdefault(twitter_handle, {}).setdefault("done", [])
 
@@ -225,7 +227,8 @@ def _forward(db, twitter_handle, mastodon_handle, number=None,
 
     # actually forward
     forwarded = 0
-    done = db.setdefault(twitter_handle, {}).setdefault("done", [])
+    _check_complete_mastodon_handle(mastodon_handle, twitter_handle)
+    mastodon = _get_mastodon_client(mastodon_handle)
 
     for toot in to_toot:
         if debug:
