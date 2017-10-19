@@ -202,8 +202,7 @@ def _forward(db, twitter_handle, mastodon_handle, number=None,
         t = twitter.Api(tweet_mode='extended', **yaml.safe_load(fobj))
 
     _check_complete_mastodon_handle(mastodon_handle, twitter_handle)
-
-    mastodon_nick, instance = mastodon_handle.split("@", 1)
+    instance = mastodon_handle.split("@", 1)[1]
 
     client_id, access_token = _login_to_mastodon(mastodon_handle)
 
@@ -345,7 +344,7 @@ def _login_to_mastodon(mastodon_handle):
     The access token file (named "t2m_<mastodon_handle>_creds.txt") is written.
     after the Mastodon email and password are interactively input.
     """
-    mastodon_nick, instance = mastodon_handle.split("@", 1)
+    instance = mastodon_handle.split("@", 1)[1]
     client_id = _ensure_client_exists_for_instance(instance)
     access_token = "t2m_%s_creds.txt" % mastodon_handle
     if not os.path.exists(access_token):
