@@ -30,6 +30,19 @@ except ImportError:
 
 
 def _get_db(path="db.json"):
+    """Return the database content from `path` (defaults to "db.json").
+
+    It is stored on disk in the json format and as the following
+    model:
+
+    {
+        <twitter handle>: {
+            "mastodon": <mastodon complete handle>,
+            "done": [<list of tweet ids (integers)>]
+        }
+    }
+
+    """
     if os.path.isfile(path):
         with open(path) as fobj:
             return json.load(fobj)
@@ -37,11 +50,16 @@ def _get_db(path="db.json"):
 
 
 def _save_db(db, path="db.json"):
+    """Save given `db` python structure to a json file at `path` (defaults
+    to "db.json")
+
+    """
     with open(path, "w") as fobj:
         json.dump(db, fobj, indent=4)
 
 
 def _ensure_client_exists_for_instance(instance):
+    "Create the client creds file if it does not exist, and return its path."
     client_id = "t2m_%s_clientcred.txt" % instance
     if not os.path.exists(client_id):
         Mastodon.create_app('t2m', to_file=client_id,
@@ -51,6 +69,13 @@ def _ensure_client_exists_for_instance(instance):
 
 
 def _check_complete_mastodon_handle(mastodon_handle, twitter_handle):
+    """Print an error and exit if the given mastodon handle does not contain
+    the instance name.
+
+    The `twitter_handle` parameter is also required to display a user-
+    understandable message.
+
+    """
     if "@" not in mastodon_handle:
         msg = ("ERROR: multiple instances are now handled, but your mastodon"
                " handle %(mastodon)r needs the instance name. Please add it"
@@ -64,7 +89,12 @@ def _check_complete_mastodon_handle(mastodon_handle, twitter_handle):
 
 def _forward(db, twitter_handle, mastodon_handle, number=None,
              only_mark_as_seen=False, retweets=False, debug=False):
+    """Internal function that does the actual tweet forwarding job.
 
+    See the `one` function doc for more information about its
+    parameters.
+
+    """
     with open("conf.yaml") as fobj:
         t = twitter.Api(tweet_mode='extended', **yaml.safe_load(fobj))
 
@@ -190,6 +220,27 @@ def _forward(db, twitter_handle, mastodon_handle, number=None,
 
 def one(twitter_handle, mastodon_handle=None, number=None,
         only_mark_as_seen=False, retweets=False, debug=False):
+    """Forward tweets of *one* twitter account to Mastodon.
+
+    If the `mastodon_handle` parameter is not specified, the given
+    `twitter_handle` must be present in the database, and the
+    corresponding Mastodon account is used.
+
+    When the `number` parameter is passed, it is used as the maximum
+    number of tweets to be forwarded at once.
+
+    If `only_mark_as_seen` is set to True (default is False), then the
+    selected tweets not actually forwarded but marked as if they had
+    already been.
+
+    If `retweets` is set to True (default is False), also the retweets
+    (and quotes) will be forwarded.
+
+    The `debug` parameter, if set, is used to display what tweets
+    would be forwarded if unset (the default), but does not actually
+    forward any tweet.
+
+    """
 
     db = _get_db()
 
@@ -215,6 +266,19 @@ def one(twitter_handle, mastodon_handle=None, number=None,
 
 
 def all(retweets=False, debug=False):
+    """Forward the tweets of all known twitter accounts to Mastodon.
+
+    Only not already forwarded tweets are forwarded. Note that you
+    must preserve your "db.json" file as this is where the list of
+    already forwarded tweets is stored: no comparison between Twitter
+    and Mastodon posts is performed to determine the posts to be
+    forwarded, only the database. Use `t2m forward -o` to avoid
+    forwarding old tweets, by marking them already forwarded.
+
+    When optional `retweets` parameter is True (it is False by
+    default), the retweets are also forwarded to Mastodon.
+
+    """
     db = _get_db()
 
     for twitter_handle in db:
@@ -231,6 +295,14 @@ def all(retweets=False, debug=False):
 
 
 def _login_to_mastodon(mastodon_handle):
+    """Login to given Mastodon account, returning client id and access token.
+
+    The client id file for this Mastodon account must pre-exist (named
+    "t2m_<mastodon_handle>_creds.txt").
+
+    The access token file (named "t2m_<mastodon_handle>_creds.txt") is written.
+    after the Mastodon email and password are interactively input.
+    """
     mastodon_nick, instance = mastodon_handle.split("@", 1)
     client_id = _ensure_client_exists_for_instance(instance)
     access_token = "t2m_%s_creds.txt" % mastodon_handle
@@ -251,6 +323,7 @@ def _login_to_mastodon(mastodon_handle):
 
 
 def add(twitter_handle, mastodon_handle):
+    "Add the link between given twitter and mastodon handles in the database."
     db = _get_db()
 
     _check_complete_mastodon_handle(mastodon_handle, twitter_handle)
@@ -270,6 +343,7 @@ def add(twitter_handle, mastodon_handle):
 
 
 def list():
+    "List known twitter accounts, which tweets can be forwarded to Mastodon."
     db = _get_db()
     for i in db:
         print(" *", i)
