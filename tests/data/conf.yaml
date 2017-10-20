@@ -1,0 +1,5 @@
+consumer_key: fake_consumer_key
+consumer_secret: fake_consumer_secret
+access_token_key: fake_access_token_key
+access_token_secret: fake_access_token_secret
+
