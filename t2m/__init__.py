@@ -254,7 +254,7 @@ def _forward(db, twitter_handle, mastodon_handle, number=None,
             traceback.print_exc()
             print("ERROR: could not forward the tweet [%s] '%s' "
                   "because '%s', skipping for now"
-                  % (toot["id"], toot["text"], e))
+                  % (toot["id"], toot["text"], e), file=sys.stderr)
             continue
 
         forwarded += 1
