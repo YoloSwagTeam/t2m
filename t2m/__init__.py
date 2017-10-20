@@ -274,7 +274,8 @@ def _forward(db, twitter_handle, mastodon_handle, number=None,
 
 
 def one(twitter_handle, mastodon_handle=None, number=None,
-        only_mark_as_seen=False, retweets=False, debug=False):
+        only_mark_as_seen=False, retweets=False, debug=False,
+        wait_seconds=30):
     """Forward tweets of *one* twitter account to Mastodon.
 
     If the `mastodon_handle` parameter is not specified, the given
@@ -315,12 +316,12 @@ def one(twitter_handle, mastodon_handle=None, number=None,
 
     _forward(db, twitter_handle, mastodon_handle, number=number,
              only_mark_as_seen=only_mark_as_seen, retweets=retweets,
-             debug=debug)
+             debug=debug, wait_seconds=wait_seconds)
 
     _save_db(db)
 
 
-def all(retweets=False, debug=False):
+def all(retweets=False, debug=False, wait_seconds=30):
     """Forward the tweets of all known twitter accounts to Mastodon.
 
     Only not already forwarded tweets are forwarded. Note that you
@@ -344,7 +345,7 @@ def all(retweets=False, debug=False):
             continue
 
         _forward(db, twitter_handle, db[twitter_handle]["mastodon"],
-                 retweets=retweets, debug=debug)
+                 retweets=retweets, debug=debug, wait_seconds=wait_seconds)
 
     _save_db(db)
 
