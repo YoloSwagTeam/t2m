@@ -7,6 +7,7 @@ import time
 import shutil
 import tempfile
 import codecs
+import re
 
 try:
     from urllib import urlretrieve
@@ -28,6 +29,9 @@ except ImportError:
 
 
 HERE = osp.abspath(osp.dirname(__file__))
+
+ENDS_WITH_TCO_URL_REGEX = re.compile(
+    '.*(?P<stripme> https://t\.co/[^/ ]{10})$')
 
 
 def _get_db(path="db.json"):
@@ -89,7 +93,7 @@ def _check_complete_mastodon_handle(mastodon_handle, twitter_handle):
 
 
 def _collect_toots(twitter_client, twitter_handle, done=(), retweets=False,
-                   max_tweets=200):
+                   max_tweets=200, strip_trailing_url=False):
     """Return a list of dicts describing toots to be sent.
 
     Given `twitter_handle` and the `done` list of already sent tweet
@@ -153,6 +157,14 @@ def _collect_toots(twitter_client, twitter_handle, done=(), retweets=False,
         for url in urls:
             text = text.replace(url.url, url.expanded_url)
 
+        # strip last t.co URL, which is a reference to the tweet
+        # itself (other URLs were expanded above, so there is no risk
+        # to remove an important, part of the text, URL)
+        if strip_trailing_url:
+            match = ENDS_WITH_TCO_URL_REGEX.search(text)
+            if match is not None:
+                text = text[:-len(match.group('stripme'))]
+
         toots.append({
             "text": h.unescape(text),
             "id": i.id,
@@ -205,7 +217,7 @@ def _get_mastodon_client(mastodon_handle):
 
 def _forward(db, twitter_handle, mastodon_handle, number=None,
              only_mark_as_seen=False, retweets=False, debug=False,
-             wait_seconds=30):
+             wait_seconds=30, strip_trailing_url=False):
     """Internal function that does the actual tweet forwarding job.
 
     This function modifies the given `db` parameter.
@@ -224,7 +236,8 @@ def _forward(db, twitter_handle, mastodon_handle, number=None,
     done = db.setdefault(twitter_handle, {}).setdefault("done", [])
 
     to_toot = _collect_toots(twitter_client, twitter_handle,
-                             done=done, retweets=retweets)
+                             done=done, retweets=retweets,
+                             strip_trailing_url=strip_trailing_url)
     if only_mark_as_seen:
         done.extend([t["id"] for t in to_toot])
         print("Marked all available tweets as seen (%s tweets marked)"
@@ -275,7 +288,7 @@ def _forward(db, twitter_handle, mastodon_handle, number=None,
 
 def one(twitter_handle, mastodon_handle=None, number=None,
         only_mark_as_seen=False, retweets=False, debug=False,
-        wait_seconds=30):
+        wait_seconds=30, strip_trailing_url=False):
     """Forward tweets of *one* twitter account to Mastodon.
 
     If the `mastodon_handle` parameter is not specified, the given
@@ -291,6 +304,12 @@ def one(twitter_handle, mastodon_handle=None, number=None,
 
     If `retweets` is set to True (default is False), also the retweets
     (and quotes) will be forwarded.
+
+    If `strip_trailing_url` is True, the https://t.co/... at the end
+    of some tweets is removed. Note that all other t.co shortened URLs
+    identified by Twitter and are expanded beforehand, so there should
+    be no risk to remove an URL that was part of the tweet when
+    activating this option.
 
     The `debug` parameter, if set, is used to display what tweets
     would be forwarded if unset (the default), but does not actually
@@ -316,12 +335,14 @@ def one(twitter_handle, mastodon_handle=None, number=None,
 
     _forward(db, twitter_handle, mastodon_handle, number=number,
              only_mark_as_seen=only_mark_as_seen, retweets=retweets,
-             debug=debug, wait_seconds=wait_seconds)
+             debug=debug, wait_seconds=wait_seconds,
+             strip_trailing_url=strip_trailing_url)
 
     _save_db(db)
 
 
-def all(retweets=False, debug=False, wait_seconds=30):
+def all(retweets=False, debug=False, wait_seconds=30,
+        strip_trailing_url=False):
     """Forward the tweets of all known twitter accounts to Mastodon.
 
     Only not already forwarded tweets are forwarded. Note that you
@@ -345,7 +366,8 @@ def all(retweets=False, debug=False, wait_seconds=30):
             continue
 
         _forward(db, twitter_handle, db[twitter_handle]["mastodon"],
-                 retweets=retweets, debug=debug, wait_seconds=wait_seconds)
+                 retweets=retweets, debug=debug, wait_seconds=wait_seconds,
+                 strip_trailing_url=strip_trailing_url)
 
     _save_db(db)
 

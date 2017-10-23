@@ -186,6 +186,22 @@ class Twitter2MastodonTC(unittest.TestCase):
             {'media_ids': ['media1 content\n', 'media2 content\n']},
             kwargs)
 
+    def test_strip(self):
+        tweet = _fake_tweet(
+            full_text=('Tweet with a normal short url https://t.co/dummy'
+                       ' and an extra at the end, to be stripped:'
+                       ' https://t.co/0123456789'),
+            urls=[mock.Mock(url='https://t.co/dummy',
+                            expanded_url='https://example.com/dummy')],
+        )
+        with _all_mocked([tweet]) as (status_post, media_post):
+            t2m.one('tw2', wait_seconds=0, strip_trailing_url=True)
+            self.assertEqual(1, status_post.call_count)
+        args, kwargs = status_post.call_args
+        expected = ('Tweet with a normal short url https://example.com/dummy'
+                    ' and an extra at the end, to be stripped:')
+        self.assertEqual((expected,), args)
+
 
 if __name__ == "__main__":
     unittest.main()
