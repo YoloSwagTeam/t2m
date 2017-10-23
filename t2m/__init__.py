@@ -242,7 +242,7 @@ def _forward(db, twitter_handle, mastodon_handle, number=None,
 
     for num, toot in enumerate(to_toot):
         if debug:
-            print(">>", toot["text"].encode("Utf-8"),
+            print(">>", toot["text"].encode("utf-8"),
                   " ".join(toot["medias"]))
             continue
         if wait_seconds and num > 0:
@@ -259,7 +259,7 @@ def _forward(db, twitter_handle, mastodon_handle, number=None,
 
         forwarded += 1
         print("[forwarding] >>",
-              toot["text"].encode("Utf-8"),
+              toot["text"].encode("utf-8"),
               " ".join(toot["medias"]))
         done.append(toot["id"])
         _save_db(db)
