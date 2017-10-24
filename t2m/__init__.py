@@ -296,7 +296,8 @@ def one(twitter_handle, mastodon_handle=None, number=None,
     corresponding Mastodon account is used.
 
     When the `number` parameter is passed, it is used as the maximum
-    number of tweets to be forwarded at once.
+    number of tweets to be forwarded at once. Note the last tweets are
+    kept, not the first.
 
     If `only_mark_as_seen` is set to True (default is False), then the
     selected tweets not actually forwarded but marked as if they had
