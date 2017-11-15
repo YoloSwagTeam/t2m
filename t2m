@@ -9,6 +9,7 @@ import time
 import shutil
 import tempfile
 import codecs
+import re
 
 try:
     from urllib import urlretrieve
@@ -27,6 +28,13 @@ try:
     from HTMLParser import HTMLParser
 except ImportError:
     from html.parser import HTMLParser
+
+
+def get_cws():
+    if os.path.exists("cw.json"):
+        return json.load(open("cw.json", "r"))
+
+    return {}
 
 
 def get_db():
@@ -119,8 +127,29 @@ def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_a
 
         if not only_mark_as_seen:
             h = HTMLParser()
+            t = h.unescape(text);
+            w = None
+
+            cws = get_cws()
+            for cw in cws.keys():
+                for pattern in cws[cw]:
+                    if w:
+                        break
+
+                    m = re.search(pattern=pattern, string=t)
+                    if m:
+                        try:
+                            # If there is a group in the re then use it
+                            w = m.group(1)
+                            t = re.sub(pattern, "", t)
+
+                        except:
+                            # If no group then use the key from the json
+                            w = cw
+
             to_toot.append({
-                "text": h.unescape(text),
+                "text": t,
+                "cw": w,
                 "id": i.id,
                 "medias": [x.media_url for x in media] if media else []
             })
@@ -148,7 +177,7 @@ def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_a
                         urlretrieve(media_url, dl_file_path)
                         medias.append((mastodon.media_post(dl_file_path))["id"])
 
-                    response = mastodon.status_post(toot["text"], media_ids=medias)
+                    response = mastodon.status_post(toot["text"], media_ids=medias, spoiler_text=toot["cw"])
                     assert not response.get("error"), response
                     forwarded += 1
                 except Exception as e:
