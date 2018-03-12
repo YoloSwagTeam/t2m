@@ -148,9 +148,13 @@ def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_a
                         urlretrieve(media_url, dl_file_path)
                         medias.append((mastodon.media_post(dl_file_path))["id"])
 
-                    response = mastodon.status_post(toot["text"], media_ids=medias)
-                    assert not response.get("error"), response
-                    forwarded += 1
+                    if len(toot["text"]) <= 500
+                        response = mastodon.status_post(toot["text"], media_ids=medias)
+                        assert not response.get("error"), response
+                        forwarded += 1
+                    else:
+                        print("INFO: twitt[%s] '%s' not forwarded because its too long (>500 char)" % (toot["id"], toot["text"])
+                        
                 except Exception as e:
                     import traceback
                     traceback.print_exc()
