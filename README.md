@@ -107,11 +107,11 @@ expressions. These are configured by creating a file named cw.json.
 
 For example, simple patterns can be used to match any tweet mentioning specific
 keywords:
+
 	{
 		"coding": [
 			"code", "coding", "pull request", "github", "git", "json", "regex"
 		],
-
 		"coffee": [
 			"#coffee", "coffee", "caffeine"
 		]
@@ -120,6 +120,7 @@ keywords:
 If a regex pattern contains a group then that group will be used as the content
 warning text. This allows rules such as using the first hashtag of a tweet as
 the CW warning:
+
 	{
 		"hashtag-prefix": [
 			"^(#[^\\s]*)\\s"
@@ -128,6 +129,7 @@ the CW warning:
 
 This also allows using a prefix such as CW to specify that the first line of a
 tweet should be used as the content warning:
+
 	{
 		"cw-prefix": [
 			"^CW (.*)\\n"
