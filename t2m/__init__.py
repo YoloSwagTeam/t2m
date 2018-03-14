@@ -34,7 +34,7 @@ ENDS_WITH_TCO_URL_REGEX = re.compile(
     '.*(?P<stripme> https://t\.co/[^/ ]{10})$')
 
 
-def get_cws():
+def get_content_warnings():
     if os.path.exists("cw.json"):
         return json.load(open("cw.json", "r"))
 
@@ -183,30 +183,29 @@ def _collect_toots(twitter_client, twitter_handle, done=(), retweets=False,
             if match is not None:
                 text = text[:-len(match.group('stripme'))]
 
-        t = h.unescape(text);
-        w = None
+        toot_text = h.unescape(text)
+        warning = None
 
-        cws = get_cws()
-        for cw in cws.keys():
-            for pattern in cws[cw]:
-                if w:
+        content_warnings = get_content_warnings()
+        for content_warning in content_warnings.keys():
+            for pattern in content_warnings[content_warning]:
+                if warning:
                     break
 
-                m = re.search(pattern=pattern, string=t)
-                if m:
+                match = re.search(pattern=pattern, string=t)
+                if match:
                     try:
                         # If there is a group in the re then use it
-                        w = m.group(1)
-                        t = re.sub(pattern, "", t)
+                        warning = match.group(1)
+                        toot_text = re.sub(pattern, "", toot_text)
 
                     except:
                         # If no group then use the key from the json
-                        w = cw
+                        warning = content_warning
 
         toots.append({
-            "text": t,
-            "cw": w,
-            "text": h.unescape(text),
+            "text": toot_text,
+            "content_warning": warning,
             "id": i.id,
             "medias": [x.media_url for x in media] if media else []
         })
@@ -238,7 +237,8 @@ def _send_toot(mastodon, toot):
             medias.append(mastodon.media_post(dl_file_path)["id"])
 
         response = mastodon.status_post(toot["text"],
-                                        media_ids=medias, spoiler_text=toot["cw"])
+                                        media_ids=medias,
+                                        spoiler_text=toot["content_warning"])
         assert not response.get("error"), response
     finally:
         shutil.rmtree(tmp_dir, ignore_errors=True)
