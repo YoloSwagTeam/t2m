@@ -34,7 +34,7 @@ ENDS_WITH_TCO_URL_REGEX = re.compile(
     '.*(?P<stripme> https://t\.co/[^/ ]{10})$')
 
 
-def get_content_warnings():
+def _get_content_warnings_db():
     if os.path.exists("cw.json"):
         return json.load(open("cw.json", "r"))
 
@@ -78,6 +78,31 @@ def _ensure_client_exists_for_instance(instance):
                             api_base_url='https://%s' % instance,
                             )
     return client_id
+
+
+def _find_potential_content_warning(toot_text):
+    "Based on cw.json, find a potential automatic content warning based on the toot content."
+    warning = None
+
+    for content_warning in _get_content_warnings_db():
+        for pattern in content_warnings[content_warning]:
+            match = re.search(pattern=pattern, string=t)
+            if not match:
+                continue
+
+            # If there is a group in the re then use it
+            if match.groups():
+                warning = match.group(1)
+                toot_text = re.sub(pattern, "", toot_text)
+
+            else:
+                # If no group then use the key from the json
+                warning = content_warning
+
+            # once we get our first content warning, stop
+            return warning, toot_text
+
+    return warning, toot_text
 
 
 def _check_complete_mastodon_handle(mastodon_handle, twitter_handle):
@@ -184,26 +209,7 @@ def _collect_toots(twitter_client, twitter_handle, done=(), retweets=False,
                 text = text[:-len(match.group('stripme'))]
 
         toot_text = h.unescape(text)
-        warning = None
-
-        for content_warning in get_content_warnings():
-            for pattern in content_warnings[content_warning]:
-                # we have already matched on a first content warning
-                if warning:
-                    break
-
-                match = re.search(pattern=pattern, string=t)
-                if not match:
-                    continue
-
-                # If there is a group in the re then use it
-                if match.groups():
-                    warning = match.group(1)
-                    toot_text = re.sub(pattern, "", toot_text)
-
-                else:
-                    # If no group then use the key from the json
-                    warning = content_warning
+        warning, toot_text = _find_potential_content_warning(toot_text)
 
         toots.append({
             "text": toot_text,
