@@ -186,8 +186,7 @@ def _collect_toots(twitter_client, twitter_handle, done=(), retweets=False,
         toot_text = h.unescape(text)
         warning = None
 
-        content_warnings = get_content_warnings()
-        for content_warning in content_warnings.keys():
+        for content_warning in get_content_warnings():
             for pattern in content_warnings[content_warning]:
                 if warning:
                     break
