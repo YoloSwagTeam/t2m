@@ -99,6 +99,45 @@ When enabled, retweets are forwarded using the `retweet.tmpl` file as a template
 
 To create a link to the original tweet, use `https://twitter.com/%(user)s/status/%(id)s`.  To link to the original author profile, use `https://twitter.com/%(user)s`.
 
+
+## Content Warnings
+
+Content warnings can be added automatically to toots based on regular
+expressions. These are configured by creating a file named cw.json.
+
+For example, simple patterns can be used to match any tweet mentioning specific
+keywords:
+	{
+		"coding": [
+			"code", "coding", "pull request", "github", "git", "json", "regex"
+		],
+
+		"coffee": [
+			"#coffee", "coffee", "caffeine"
+		]
+	}
+
+If a regex pattern contains a group then that group will be used as the content
+warning text. This allows rules such as using the first hashtag of a tweet as
+the CW warning:
+	{
+		"hashtag-prefix": [
+			"^(#[^\\s]*)\\s"
+		]
+	}
+
+This also allows using a prefix such as CW to specify that the first line of a
+tweet should be used as the content warning:
+	{
+		"cw-prefix": [
+			"^CW (.*)\\n"
+		]
+	}
+
+Note that the regex is matched after the `retweet.tmpl` file is applied as a
+template, so this can be used to automatically apply a content warning to all
+RTs, or RTs from specific people, etc.
+
 # Licence
 
     Copyright (C) 2017  Laurent Peuch and [Contributors](https://github.com/Psycojoker/t2m/graphs/contributors)

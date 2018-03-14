@@ -34,6 +34,13 @@ ENDS_WITH_TCO_URL_REGEX = re.compile(
     '.*(?P<stripme> https://t\.co/[^/ ]{10})$')
 
 
+def get_cws():
+    if os.path.exists("cw.json"):
+        return json.load(open("cw.json", "r"))
+
+    return {}
+
+
 def _get_db(path="db.json"):
     """Return the database content from `path` (defaults to "db.json").
 
@@ -176,7 +183,29 @@ def _collect_toots(twitter_client, twitter_handle, done=(), retweets=False,
             if match is not None:
                 text = text[:-len(match.group('stripme'))]
 
+        t = h.unescape(text);
+        w = None
+
+        cws = get_cws()
+        for cw in cws.keys():
+            for pattern in cws[cw]:
+                if w:
+                    break
+
+                m = re.search(pattern=pattern, string=t)
+                if m:
+                    try:
+                        # If there is a group in the re then use it
+                        w = m.group(1)
+                        t = re.sub(pattern, "", t)
+
+                    except:
+                        # If no group then use the key from the json
+                        w = cw
+
         toots.append({
+            "text": t,
+            "cw": w,
             "text": h.unescape(text),
             "id": i.id,
             "medias": [x.media_url for x in media] if media else []
@@ -209,7 +238,7 @@ def _send_toot(mastodon, toot):
             medias.append(mastodon.media_post(dl_file_path)["id"])
 
         response = mastodon.status_post(toot["text"],
-                                        media_ids=medias)
+                                        media_ids=medias, spoiler_text=toot["cw"])
         assert not response.get("error"), response
     finally:
         shutil.rmtree(tmp_dir, ignore_errors=True)
