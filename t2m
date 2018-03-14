@@ -277,4 +277,4 @@ if __name__ == '__main__':
         print("You need to have a conf.yaml file containing twitter connection informations, please read the documentation https://github.com/Psycojoker/t2m#installation")
         sys.exit(1)
 
-parser.dispatch()
+    parser.dispatch()
