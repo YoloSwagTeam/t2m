@@ -2,3 +2,7 @@ Mastodon.py
 python-twitter
 pyyaml
 argh
+pytz
+requests-oauthlib
+requests
+python-dateutil
