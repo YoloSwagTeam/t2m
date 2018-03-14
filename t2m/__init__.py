@@ -188,6 +188,7 @@ def _collect_toots(twitter_client, twitter_handle, done=(), retweets=False,
 
         for content_warning in get_content_warnings():
             for pattern in content_warnings[content_warning]:
+                # we have already matched on a first content warning
                 if warning:
                     break
 
