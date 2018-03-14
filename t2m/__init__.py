@@ -193,15 +193,17 @@ def _collect_toots(twitter_client, twitter_handle, done=(), retweets=False,
                     break
 
                 match = re.search(pattern=pattern, string=t)
-                if match:
-                    try:
-                        # If there is a group in the re then use it
-                        warning = match.group(1)
-                        toot_text = re.sub(pattern, "", toot_text)
+                if not match:
+                    continue
 
-                    except:
-                        # If no group then use the key from the json
-                        warning = content_warning
+                try:
+                    # If there is a group in the re then use it
+                    warning = match.group(1)
+                    toot_text = re.sub(pattern, "", toot_text)
+
+                except:
+                    # If no group then use the key from the json
+                    warning = content_warning
 
         toots.append({
             "text": toot_text,
