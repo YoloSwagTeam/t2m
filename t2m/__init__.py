@@ -90,13 +90,13 @@ def _find_potential_content_warning(toot_text):
             if not match:
                 continue
 
-            # If there is a group in the re then use it
+            # If there is a group in the re then use it for the cw text
             if match.groups():
                 warning = match.group(1)
                 toot_text = re.sub(pattern, "", toot_text)
 
             else:
-                # If no group then use the key from the json
+                # If no group then use the key from the json for the cw text
                 warning = content_warning
 
             # once we get our first content warning, stop
