@@ -79,6 +79,7 @@ def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_a
             retweet_template = f.read()
 
     # select tweets first
+    # "i" is a status http://python-twitter.readthedocs.io/en/latest/_modules/twitter/models.html#Status
     for i in reversed(t.GetUserTimeline(screen_name=twitter_handle, count=200)):
 
         retweeted_status = i.retweeted_status
@@ -95,6 +96,16 @@ def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_a
 
                 if i.quoted_status:
                     text = i.full_text + "\n\n" + text
+
+                    #can only be greater than 500 chars if it's a quoted tweet so checking here
+                    #delete the text of the quoted tweet from the toot end replace it with a much shorter string
+                    if len(text) > 500:
+                        text = retweet_template % {
+                            "text": "Quoted tweet's link below",
+                            "user": retweeted_status.user.screen_name,
+                            "id": retweeted_status.id
+                        }
+                        text = i.full_text + "\n\n" + text
 
                 urls = retweeted_status.urls
                 media = retweeted_status.media
@@ -148,9 +159,11 @@ def forward(db, twitter_handle, mastodon_handle, debug, number=None, only_mark_a
                         urlretrieve(media_url, dl_file_path)
                         medias.append((mastodon.media_post(dl_file_path))["id"])
 
+
                     response = mastodon.status_post(toot["text"], media_ids=medias)
                     assert not response.get("error"), response
                     forwarded += 1
+
                 except Exception as e:
                     import traceback
                     traceback.print_exc()
@@ -264,4 +277,4 @@ if __name__ == '__main__':
         print("You need to have a conf.yaml file containing twitter connection informations, please read the documentation https://github.com/Psycojoker/t2m#installation")
         sys.exit(1)
 
-    parser.dispatch()
+parser.dispatch()
