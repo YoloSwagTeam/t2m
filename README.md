@@ -2,7 +2,7 @@
 
 A script to manage the forwarding of tweets from Twitter accounts to a Mastodon one.
 
-[![Build Status](https://travis-ci.org/yoloswagteam/t2m.svg?branch=refactoring-tests-pip-installation)](https://travis-ci.org/fcayre/t2m)
+[![Build Status](https://travis-ci.org/yoloswagteam/t2m.svg)](https://travis-ci.org/yoloswagteam/t2m)
 
 # Installation
 
