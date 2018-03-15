@@ -239,8 +239,8 @@ def _send_toot(mastodon, toot):
     try:
         medias = []
         for number, media_url in enumerate(toot["medias"]):
-            dl_file_path = os.path.join(tmp_dir, str(number) + "."
-                                    + media_url.split(".")[-1])
+            dl_file_path = os.path.join(tmp_dir, str(number) + "." +
+                                        media_url.split(".")[-1])
             urlretrieve(media_url, dl_file_path)
             medias.append(mastodon.media_post(dl_file_path)["id"])
 
