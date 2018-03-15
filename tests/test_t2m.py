@@ -183,7 +183,7 @@ class Twitter2MastodonTC(unittest.TestCase):
         args, kwargs = status_post.call_args
         self.assertEqual(('normal with urls and medias',), args)
         self.assertEqual(
-            {'media_ids': ['media1 content\n', 'media2 content\n']},
+            {'media_ids': ['media1 content\n', 'media2 content\n'], 'spoiler_text': None},
             kwargs)
 
     def test_strip(self):
