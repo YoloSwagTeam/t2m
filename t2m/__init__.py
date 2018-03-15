@@ -84,9 +84,9 @@ def _find_potential_content_warning(toot_text):
     "Based on cw.json, find a potential automatic content warning based on the toot content."
     warning = None
 
-    for content_warning in _get_content_warnings_db():
-        for pattern in content_warnings[content_warning]:
-            match = re.search(pattern=pattern, string=t)
+    for content_warning, patterns in _get_content_warnings_db().items():
+        for pattern in patterns:
+            match = re.search(pattern=pattern, string=toot_text)
             if not match:
                 continue
 
