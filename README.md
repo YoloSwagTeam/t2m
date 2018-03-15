@@ -6,7 +6,11 @@ A script to manage the forwarding of tweets from Twitter accounts to a Mastodon 
 
 # Installation
 
-On debian/ubuntu:
+Using pip:
+
+    pip install t2m
+
+Alternatively from source, on debian/ubuntu:
 
     sudo apt-get install python-virtualenv
 
