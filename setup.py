@@ -70,6 +70,7 @@ setup(
     install_requires=[
         'Mastodon.py',
         'python-twitter',
+        'requests',
         'pyyaml',
         'argh',
     ],
