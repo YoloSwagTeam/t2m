@@ -156,7 +156,8 @@ def _collect_toots(twitter_client, twitter_handle, done=(), retweets=False,
     for i in reversed(twitter_client.GetUserTimeline(
             screen_name=twitter_handle, count=max_tweets)):
 
-        retweeted_status = i.retweeted_status or i.quoted_status
+        quoted_status = getattr(i, "quoted_status", None)
+        retweeted_status = i.retweeted_status or quoted_status
 
         if retweeted_status:
             if retweets:
@@ -168,7 +169,7 @@ def _collect_toots(twitter_client, twitter_handle, done=(), retweets=False,
 
                 # can only be greater than 500 chars if it's a quoted tweet so checking here
                 # delete the text of the quoted tweet from the toot end replace it with a much shorter string
-                if i.quoted_status and len(text) > 500:
+                if quoted_status and len(text) > 500:
                     text = retweet_template % {
                         "text": "Quoted tweet's link below",
                         "user": retweeted_status.user.screen_name,
@@ -176,7 +177,7 @@ def _collect_toots(twitter_client, twitter_handle, done=(), retweets=False,
                     }
                     text = i.full_text + "\n\n" + text
 
-                if i.quoted_status:
+                if quoted_status:
                     text = i.full_text + "\n\n" + text
 
                 urls = retweeted_status.urls
