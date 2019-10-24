@@ -209,7 +209,7 @@ def _collect_toots(twitter_client, twitter_handle, done=(), retweets=False,
             if match is not None:
                 text = text[:-len(match.group('stripme'))]
 
-        toot_text = h.unescape(text)
+        toot_text = html.unescape(text)
         warning, toot_text = _find_potential_content_warning(toot_text)
 
         toots.append({
