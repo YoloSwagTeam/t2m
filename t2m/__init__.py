@@ -125,7 +125,7 @@ def _check_complete_mastodon_handle(mastodon_handle, twitter_handle):
 
 
 def _collect_toots(twitter_client, twitter_handle, done=(), retweets=False,
-                   max_tweets=200, strip_trailing_url=False):
+                   max_tweets=5, strip_trailing_url=False): # change: max_tweet 200 -> 20
     """Return a list of dicts describing toots to be sent.
 
     Given `twitter_handle` and the `done` list of already sent tweet
@@ -156,6 +156,26 @@ def _collect_toots(twitter_client, twitter_handle, done=(), retweets=False,
     for i in reversed(twitter_client.GetUserTimeline(
             screen_name=twitter_handle, count=max_tweets)):
 
+    # change: ignore "reply to" prior than retweet
+        if i.full_text.startswith("@"):
+            continue
+
+        # do not forward already forwarded tweets
+        if i.id in done:
+            continue
+
+        url_filter = []
+        url_toot = 'https://twitter.com/' + twitter_handle + '/status/' + i.id_str
+        url_filter.append(url_toot)
+        url_retweet = None
+
+        urls = []
+        media = []
+        if i.urls != None:
+            urls.extend(i.urls)
+        if i.media != None:
+            media.extend(i.media)
+
         quoted_status = getattr(i, "quoted_status", None)
         retweeted_status = i.retweeted_status or quoted_status
 
@@ -166,6 +186,9 @@ def _collect_toots(twitter_client, twitter_handle, done=(), retweets=False,
                     "user": retweeted_status.user.screen_name,
                     "id": retweeted_status.id
                 }
+
+                url_retweet = 'https://twitter.com/' + retweeted_status.user.screen_name + '/status/' + retweeted_status.id_str
+                url_filter.append(url_retweet)
 
                 # can only be greater than 500 chars if it's a quoted tweet so checking here
                 # delete the text of the quoted tweet from the toot end replace it with a much shorter string
@@ -180,26 +203,53 @@ def _collect_toots(twitter_client, twitter_handle, done=(), retweets=False,
                 if quoted_status:
                     text = i.full_text + "\n\n" + text
 
-                urls = retweeted_status.urls
-                media = retweeted_status.media
+                if retweeted_status.urls != None:
+                    urls.extend(retweeted_status.urls)
+                if retweeted_status.media != None:
+                    media.extend(retweeted_status.media)
             else:
                 continue
         else:
-            # do not forward pseudo-private answer for now
-            if i.full_text.startswith("@"):
-                continue
-
             text = i.full_text
-            urls = i.urls
-            media = i.media
 
-        # do not forward already forwarded tweets
-        if i.id in done:
-            continue
+        photo_list = []
+        mp4_list = []
+        mp4_addr = None
+
+        for media_1 in media:
+            url_filter.append(media_1.url)
+
+            if media_1.video_info != None:
+                photo_list.append(media_1.media_url) # temp
+                video_addr = None
+                for variant_1 in media_1.video_info['variants']:
+                    if variant_1['content_type'] == 'video/mp4':
+                        video_addr = variant_1['url']
+                if video_addr != None:
+                    mp4_list.append(video_addr)
+                    mp4_addr = video_addr
+            else:
+                photo_list.append(media_1.media_url)
+        # print(photo_list)
+        # print(mp4_list)
+
+        media_list = []
+        if mp4_addr == None:
+            media_list.extend(set(photo_list))
+        else:
+            media_list.append(mp4_addr)
+
+        print(media_list)
 
         # remove this t.co crap
         for url in urls:
             text = text.replace(url.url, url.expanded_url)
+
+        for url_1 in url_filter:
+            text = text.replace(url_1, '')
+
+        if url_retweet != None:
+            text = text + '\n\n' + url_retweet
 
         # strip last t.co URL, which is a reference to the tweet
         # itself (other URLs were expanded above, so there is no risk
@@ -216,7 +266,8 @@ def _collect_toots(twitter_client, twitter_handle, done=(), retweets=False,
             "text": toot_text,
             "content_warning": warning,
             "id": i.id,
-            "medias": [x.media_url for x in media] if media else []
+            "medias": media_list
+            # "medias": [x.media_url for x in media] if media else []
         })
 
     return toots
@@ -243,7 +294,16 @@ def _send_toot(mastodon, toot):
             dl_file_path = os.path.join(tmp_dir, str(number) + "." +
                                         media_url.split(".")[-1])
             urlretrieve(media_url, dl_file_path)
-            medias.append(mastodon.media_post(dl_file_path)["id"])
+            try:
+                medias.append(mastodon.media_post(dl_file_path)["id"])
+            except:
+                new_mp4_file = dl_file_path + '.42.mp4'
+                cmd_ffmpeg = 'ffmpeg -i ' + dl_file_path + ' -brand mp42 ' + new_mp4_file
+                os.system(cmd_ffmpeg)
+                try:
+                    medias.append(mastodon.media_post(new_mp4_file)["id"])
+                except:
+                    pass
 
         response = mastodon.status_post(toot["text"],
                                         media_ids=medias,
@@ -331,7 +391,6 @@ def _forward(db, twitter_handle, mastodon_handle, number=None,
     else:
         print("Forwarded %s tweets from %s to %s"
               % (forwarded, twitter_handle, mastodon_handle))
-
     return
 
 
