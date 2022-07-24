@@ -174,6 +174,7 @@ def _collect_toots(twitter_client, twitter_handle, done=(), retweets=False,
         if i.urls != None:
             urls.extend(i.urls)
         if i.media != None:
+            i.media.reverse()
             media.extend(i.media)
 
         quoted_status = getattr(i, "quoted_status", None)
@@ -206,6 +207,7 @@ def _collect_toots(twitter_client, twitter_handle, done=(), retweets=False,
                 if retweeted_status.urls != None:
                     urls.extend(retweeted_status.urls)
                 if retweeted_status.media != None:
+                    retweeted_status.media.reverse()
                     media.extend(retweeted_status.media)
             else:
                 continue
