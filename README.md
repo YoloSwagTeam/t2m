@@ -4,6 +4,17 @@ A script to manage the forwarding of tweets from Twitter accounts to a Mastodon 
 
 [![Build Status](https://travis-ci.org/YoloSwagTeam/t2m.svg)](https://travis-ci.org/YoloSwagTeam/t2m)
 
+
+### Fork Comments
+
+这是我目前自己在用的 twitter to mastodon 程序。原始版本好像已经不太能用了；我当时改了一下才能用，具体都改了什么我忘了，回头根据 git 历史再整理一下。
+
+- 这个程序基于 python，本来是可以用 virtual env 跨平台的，但现在只能在 linux 上跑，因为我直接调用了外部 ffmpeg 命令进行视频转换。有兴趣的同学也可以自行改用 python 内部的 ffmpeg。
+
+    - Some videos downloaded from twitter are coded with *iso5* format, but mastodon only accepts *mp42*, so I call ffmpeg to convert the video format.
+
+- 添加了 twitter_2_mastodon.sh 文件，作为 crontab 调用的例子。
+
 # Installation
 
 Using pip:
